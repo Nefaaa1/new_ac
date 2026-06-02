@@ -27,6 +27,7 @@ jobs:
             cd /var/www/monprojet
 
             echo "📦 Pull du code..."
+            git reset --hard
             git pull origin main
 
             echo "📚 Dépendances PHP..."
