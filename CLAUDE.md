@@ -28,7 +28,10 @@ GET  /dashboard     → auth     → redirige vers admin/client selon le type
 
 # Groupe admin (prefix admin, name admin.*, middleware auth + type:admin)
 GET /admin                  admin.dashboard   (Admin\Dashboard)
-GET /admin/sites            admin.sites       (Admin\Sites)
+GET /admin/sites                admin.sites           (Admin\Sites)            # liste
+GET /admin/sites/create         admin.sites.create    (Admin\Sites\Form)       # création (page pleine)
+GET /admin/sites/{site}         admin.sites.show      (Admin\Sites\Show)       # fiche (page pleine)
+GET /admin/sites/{site}/edit    admin.sites.edit      (Admin\Sites\Form)       # édition (même composant que create)
 GET /admin/contrats             admin.contrats        (Admin\Contrats)         # liste
 GET /admin/contrats/create      admin.contrats.create (Admin\Contrats\Form)    # création (page pleine)
 GET /admin/contrats/{contrat}   admin.contrats.show   (Admin\Contrats\Show)    # fiche (page pleine)
@@ -37,11 +40,11 @@ GET /admin/clients          admin.clients     (Admin\Clients)
 GET /admin/actions          admin.actions     (Admin\Actions)
 GET /admin/tickets          admin.tickets     (Admin\Tickets)
 GET /admin/chatbots         admin.chatbots    (Admin\Chatbots)
-GET /admin/status           admin.status      (Admin\Status)
 GET /admin/profil           admin.profil      (Admin\Profil)
 GET /admin/recap/actions    admin.recap.actions (Admin\Recap\Actions)
 GET /admin/recap/tickets    admin.recap.tickets (Admin\Recap\Tickets)
 GET /admin/gestion/admins   admin.gestion.admins (Admin\Gestion\Admins)  # +middleware can:manage-admins
+GET /admin/gestion/statuts  admin.gestion.statuts (Admin\Gestion\Statuts) # +middleware can:manage-admins
 
 # Groupe client (middleware auth + type:client)
 GET /client                 client.dashboard  (Client\Dashboard)
@@ -63,8 +66,8 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
   - Création : mot de passe **généré, affiché une seule fois** (comme le seeder).
   - **Suspension** = colonne `users.suspended_at` (pas un softDelete) : login refusé (`Auth\Login`) + session active coupée (`not-suspended`).
 - **Niveaux d'accès** : `users.access_level` = `full` (voit tout) | `restricted` (limité aux grants).
-- **Accès granulaire par ressource** : table polymorphe `access_grants` (`user_id`, `grantable_type`, `grantable_id`, unique). Modèle `AccessGrant`. On accorde aujourd'hui des **clients** (`grantable_type = User::class`) **et des contrats** (`grantable_type = Contrat::class`) via le form admin (cases à cocher `grantedClientIds` / `grantedContratIds`, visibles si `accessLevel === restricted`) ; **sites** câblés, inertes jusqu'à leur modèle.
-- **Application** : trait `App\Models\Concerns\RestrictsAccess` → scope `Model::accessibleBy($admin)` (renvoie tout si full, sinon filtre sur les grants). Posé sur `User`(client) et `Contrat` ; à poser sur le futur `Site`. `User::canAccess($resource)` pour un check unitaire (utilisé par `Contrats\Form`/`Show` → `abort_unless(canAccess, 403)`). Sync centralisé : `Admins::syncGrants()` → `syncGrantsFor($admin, $type, $ids)` (purge + recrée par type ; full = purge tout). Ajouter un type accordable = un `array $grantedXIds` + une règle de validation + un appel `syncGrantsFor` + un bloc de cases dans la vue.
+- **Accès granulaire par ressource** : table polymorphe `access_grants` (`user_id`, `grantable_type`, `grantable_id`, unique). Modèle `AccessGrant`. On accorde aujourd'hui des **clients** (`grantable_type = User::class`), des **contrats** (`grantable_type = Contrat::class`) **et des sites** (`grantable_type = Site::class`) via le form admin (cases à cocher `grantedClientIds` / `grantedContratIds` / `grantedSiteIds`, visibles si `accessLevel === restricted`).
+- **Application** : trait `App\Models\Concerns\RestrictsAccess` → scope `Model::accessibleBy($admin)` (renvoie tout si full, sinon filtre sur les grants). Posé sur `User`(client), `Contrat` et `Site`. `User::canAccess($resource)` pour un check unitaire (utilisé par `Contrats\Form`/`Show` → `abort_unless(canAccess, 403)`). Sync centralisé : `Admins::syncGrants()` → `syncGrantsFor($admin, $type, $ids)` (purge + recrée par type ; full = purge tout). Ajouter un type accordable = un `array $grantedXIds` + une règle de validation + un appel `syncGrantsFor` + un bloc de cases dans la vue.
 - **Garde-fous** : Gate `manage-admins` (full only) sur la route gestion + sidebar (clé `'can'` du groupe Navigation) ; impossible de se suspendre/supprimer soi-même ; super-admin (`antoinepw`) protégé (ni suspension, ni rétrogradation).
 - **Formulaire = slide-over** (panneau glissant depuis la droite) : toujours dans le DOM, visibilité pilotée par `x-data="{ open: @entangle('showForm') }"` + `x-transition` translate (pour animer entrée/sortie — ne PAS revenir à un `@if` qui casserait l'animation). Structure interne : en-tête figé / corps `flex-1 overflow-y-auto` / pied figé.
 
@@ -98,6 +101,18 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - **Contrat supprimé (soft delete) → actions conservées + alerte** : la liste charge le contrat en `withTrashed()` (eager `with(['contrat'=>fn($q)=>$q->withTrashed()...])` + `whereHas(...withTrashed())`), donc une action dont le contrat est archivé **reste visible** avec un badge rouge « Contrat supprimé » (libellé barré, lien non cliquable car la fiche Show 404 sur un trashed). Édition/suppression restent possibles (guards en `withTrashed`) ; à l'édition, bannière d'alerte (`$contratTrashed` posé dans `editAction()`) et le `ContratPicker` pré-remplit le libellé du contrat archivé (mount en `withTrashed`) — on peut garder tel quel ou réaffecter à un contrat actif (la recherche du picker, elle, n'expose **que** les contrats actifs).
 - Formulaire : `<x-date-input>` (date), `<x-text-input type=number step=0.25>` (temps), `<x-select>` (type), **`<livewire:admin.contrat-picker>`** (contrat, cf. ci-dessous), `<textarea>` (commentaire). Le picker est keyé `:key="'contrat-picker-'.$formNonce"` (`$formNonce++` à chaque `create()`/`editAction()`) pour **remonter proprement** à chaque ouverture (sinon il garderait l'état précédent — le slide-over reste dans le DOM).
 
+## Sites (CRUD)
+- **Vraie page par site** (PAS de slide-over, comme Contrats) : 3 composants full-page — `Admin\Sites` (liste), `Admin\Sites\Form` (création **et** édition, onglets), `Admin\Sites\Show` (fiche lecture seule, onglets). Routes sous `prefix('sites')->name('sites.')` : `create` / `{site}` (show) / `{site}/edit` — **`create` AVANT `{site}`**.
+- Table `sites` : `id`, `nom` (requis), `client_id?` (FK `clients.id` `nullOnDelete` — **client facultatif**), `boutique_en_ligne` (bool, défaut false), `statut_id?` (FK `statuts.id` `nullOnDelete`), `date_statut?` (date — **requise si le statut choisi a `requiert_date=true`**), `mot_de_passe_complementaire?` (text, cast **`encrypted`** — champ texte libre), timestamps, `softDeletes`. Modèle `Site` : `HasFactory + RestrictsAccess + SoftDeletes`, relations `client()`/`statut() belongsTo`, `hebergement()`/`ftp()`/`bdd()`/`wordpress() hasOne`.
+- **4 onglets credentials = 4 tables 1‑1** (`belongsTo Site`, FK `cascadeOnDelete`, `unique` sur `site_id`, **tous les `mot_de_passe*` cast `encrypted`**, chacune un `client_visible` bool pour l'espace client futur) : `site_hebergement` (`SiteHebergement`, const `PERIODES` mensuelle|annuelle + `paiement_agence` bool), `site_ftp` (`SiteFtp`), `site_bdd` (`SiteBdd`), `site_wordpress` (`SiteWordpress` : accès admin + accès client). `protected $table` explicite sur chaque (noms singuliers).
+- **Form** : onglets (Livewire prop `activeTab`, `x-show="$wire.activeTab===…"`) Général + Hébergement + FTP + Base de données + WordPress. Onglet Général = champs `sites` (statut en `wire:model.live` → computed `dateRequise` affiche/active la date). Onglets credentials = **propriétés tableau** `public array $hebergement/$ftp/$bdd/$wordpress` (`wire:model="hebergement.nom"`…). `save()` upsert le site puis `updateOrCreate([], nullify($section))` sur chaque relation 1‑1 (la ligne existe toujours pour un site) → `redirectRoute('admin.sites.show')`. Garde `abort_unless(canAccess, 403)` en édition. `nullify()` = chaînes vides → null (les booléens restent intacts).
+- **Show** : onglets Alpine pur (`x-data="{ tab }"`) Général (chiffres clés + mot de passe complémentaire masqué/reveal) + 4 onglets credentials (cartes, `<x-admin.cred-field>` pour chaque identifiant, mot de passe masqué `••••` + œil, badge `<x-admin.client-visible-badge>`). Statut affiché en chip **couleur hex inline** (`style="background-color:{couleur}1a; color:{couleur}"`).
+- **Liste** : tableau coloré + `WithSorting` (défaut `nom asc`) + recherche libre `#[Url(except:'')] $search` (nom / société / nom-prénom client), `accessibleBy`. Chip société + badge boutique + chip statut coloré.
+- **Recherche globale** : `SiteSource` **actif** (nom / société, `accessibleBy`, deep-link `admin.sites.show`, icône `globe`).
+
+## Statuts (rubrique Gestion)
+- `Admin\Gestion\Statuts` (route `admin.gestion.statuts`, groupe **Gestion** → Gate `manage-admins`, full only) : CRUD en **slide-over** (UX admins/actions). Table `statuts` : `id`, `libelle` (requis), `couleur?` (hex `#RRGGBB`, **color picker natif** `<input type=color>`), `requiert_date` (bool — impose `date_statut` sur les sites portant ce statut), timestamps, `softDeletes`. Modèle `Statut` : `SoftDeletes`, cast `requiert_date` bool, `hasMany sites()`, const `DEFAULT_COLOR` + helper `color()` (hex toujours exploitable). Suppression = soft delete → les sites gardent `statut_id` mais la relation renvoie null (statut filtré, pas de casse d'affichage).
+
 ## Autocomplétion contrat — `Admin\ContratPicker` (réutilisable)
 - Composant Livewire **nested** branché par `wire:model` grâce à `#[Modelable] public ?int $contratId`. Usage : `<livewire:admin.contrat-picker wire:model="contrat_id" label="Contrat" :key="…" />`.
 - Champ texte (autocomplete off) → `results()` (computed, `accessibleBy`, libellé `like`, min 2 car., limite 8) affichées dans un dropdown. `selectContrat($id)` fixe `contratId` + remplit le libellé ; **toute frappe (`updatedSearch`) ré-annule la sélection** (`contratId=null`) jusqu'à un nouveau choix → la validation `required` du parent reste fiable.
@@ -121,7 +136,7 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - **Pattern « providers » calqué sur `Navigation`** dans `app/Support/Search/` :
   - `SearchSource` (interface `search(string): SearchResult[]`), `SearchResult` (DTO readonly : group/label/sublabel/icon/url/score).
   - `Search` = registre : `query()` interroge toutes les `sources()`, trie par `score` desc, plafonne à `LIMIT` (15), regroupe. `MIN_CHARS=2`.
-  - `Search/Sources/ClientSource` + `ContratSource` : **actifs** (filtrés par `accessibleBy`, deep-link vers la fiche). `SiteSource` : **stub `[]`** jusqu'à son modèle. Activer une entité = remplir son source, rien d'autre à toucher.
+  - `Search/Sources/ClientSource` + `ContratSource` + `SiteSource` : **actifs** (filtrés par `accessibleBy`, deep-link vers la fiche). Activer une entité = remplir son source, rien d'autre à toucher.
   - Ajouter une entité recherchable → nouvelle classe `SearchSource` + l'enregistrer dans `Search::sources()`.
 
 ## Structure views
@@ -131,15 +146,20 @@ layouts/admin.blade.php            ← espace admin : sidebar noire (zinc-950) +
 layouts/panel.blade.php            ← dashboard client (thème zinc-950)
 livewire/auth/login.blade.php
 livewire/admin/dashboard.blade.php  + profil + notepad + favorites + favorite-toggle + global-search + contrat-picker
-   + une vue par page (sites, contrats, clients, actions, tickets, chatbots, status)
-   livewire/admin/contrats/{form,show}.blade.php (fiche contrat pleine page + onglets)
-   et livewire/admin/recap/{actions,tickets}.blade.php + admin/gestion/admins.blade.php
+   + une vue par page (sites, contrats, clients, actions, tickets, chatbots)
+   livewire/admin/contrats/{form,show}.blade.php + livewire/admin/sites/{form,show}.blade.php (fiches pleine page + onglets)
+   et livewire/admin/recap/{actions,tickets}.blade.php + admin/gestion/{admins,statuts}.blade.php
 livewire/client/dashboard.blade.php
 components/admin/page-header.blade.php  ← props: title, subtitle, icon (en-tête de page admin)
 components/admin/empty-state.blade.php  ← props: icon, title (état « en construction »)
 components/admin/sort-header.blade.php  ← <th> triable : props field, label, sort, direction (→ sortBy)
+components/admin/cred-field.blade.php   ← affiche un identifiant (props: label, value, password, link) — fiches Sites
+components/admin/client-visible-badge.blade.php ← badge « Visible/Masqué client » (prop: visible)
 components/text-input.blade.php     ← props: label, size, name, error (erreur intégrée)
 components/select.blade.php          ← jumeau de text-input pour les <select> (options en slot)
+components/textarea.blade.php        ← jumeau de text-input pour les <textarea> (props: label, name, rows, floatError)
+components/checkbox.blade.php        ← case à cocher stylée (props: label, hint ; wire:model en attribut)
+components/password-input.blade.php  ← input mot de passe + œil de révélation Alpine (props: label, name, floatError)
 components/date-input.blade.php      ← sélecteur de date Flatpickr (props: label, name, model, floatError) — cf. § Dates
 components/primary-button.blade.php ← props: icon (lucide), text, size, full ; hover inversé
 components/input-label / input-error / auth-session-status
@@ -153,9 +173,9 @@ Topbar : `<livewire:admin.global-search>` (recherche universelle) + `<livewire:a
 
 ## Composants Livewire (app/Livewire/)
 - `Auth\Login` (#[Layout guest])
-- `Admin\*` (#[Layout admin], full-page) : `Dashboard`, `Sites`, `Contrats`, `Actions`, `Tickets`,
-  `Chatbots`, `Status`, `Profil`, `Recap\Actions`, `Recap\Tickets` — pages simples = en-tête + empty-state ;
-  `Clients` = CRUD clients (cf. section Clients) ; `Contrats` (liste) + `Contrats\Form` + `Contrats\Show` = CRUD contrats pleine page (cf. section Contrats) ; `Actions` = CRUD actions en slide-over (cf. section Actions) ; `Gestion\Admins` = CRUD admins + suspension + accès (cf. section dédiée)
+- `Admin\*` (#[Layout admin], full-page) : `Dashboard`, `Tickets`, `Chatbots`,
+  `Profil`, `Recap\Actions`, `Recap\Tickets` — pages simples = en-tête + empty-state ;
+  `Clients` = CRUD clients (cf. section Clients) ; `Contrats` (liste) + `Contrats\Form` + `Contrats\Show` = CRUD contrats pleine page (cf. section Contrats) ; `Sites` (liste) + `Sites\Form` + `Sites\Show` = CRUD sites pleine page (cf. section Sites) ; `Actions` = CRUD actions en slide-over (cf. section Actions) ; `Gestion\Admins` = CRUD admins + suspension + accès et `Gestion\Statuts` = CRUD statuts (cf. sections dédiées)
 - `Admin\*` (imbriqués, sans #[Layout]) : `Notepad` (note auto-save), `Favorites` (liste dashboard),
   `FavoriteToggle` (étoile topbar), `GlobalSearch` (recherche universelle topbar → `App\Support\Search`),
   `ContratPicker` (autocomplétion contrat `#[Modelable]`, cf. section dédiée)

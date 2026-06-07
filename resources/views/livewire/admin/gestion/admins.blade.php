@@ -241,10 +241,27 @@
                             </div>
 
                             <div class="border-t border-zinc-200 pt-3">
-                                <p class="text-xs text-zinc-400">
-                                    <x-lucide-info class="mr-1 inline h-3.5 w-3.5 align-text-bottom" />
-                                    Sites : disponibles dès la création de ce module.
+                                <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                    <x-lucide-globe class="h-3.5 w-3.5 text-primary" />
+                                    Sites accessibles
                                 </p>
+                                @if($this->sites->isEmpty())
+                                    <p class="mt-2 text-xs text-zinc-400">Aucun site pour le moment.</p>
+                                @else
+                                    <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1">
+                                        @foreach($this->sites as $site)
+                                            <label class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-700 hover:bg-white">
+                                                <input type="checkbox" wire:model="grantedSiteIds" value="{{ $site->id }}" class="rounded text-primary focus:ring-0">
+                                                <span class="min-w-0">
+                                                    <span class="block truncate">{{ $site->nom }}</span>
+                                                    @if($site->client)
+                                                        <span class="block truncate text-xs text-zinc-400">{{ $site->client->societe ?: $site->client->user?->name }}</span>
+                                                    @endif
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endif

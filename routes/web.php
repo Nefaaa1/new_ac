@@ -29,6 +29,11 @@ Route::get('/dashboard', function () {
 Route::middleware(['auth', 'not-suspended', 'type:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', Admin\Dashboard::class)->name('dashboard');
     Route::get('/sites', Admin\Sites::class)->name('sites');
+    Route::prefix('sites')->name('sites.')->group(function () {
+        Route::get('/create', Admin\Sites\Form::class)->name('create');
+        Route::get('/{site}', Admin\Sites\Show::class)->name('show');
+        Route::get('/{site}/edit', Admin\Sites\Form::class)->name('edit');
+    });
     Route::get('/contrats', Admin\Contrats::class)->name('contrats');
     Route::prefix('contrats')->name('contrats.')->group(function () {
         Route::get('/create', Admin\Contrats\Form::class)->name('create');
@@ -39,7 +44,6 @@ Route::middleware(['auth', 'not-suspended', 'type:admin'])->prefix('admin')->nam
     Route::get('/actions', Admin\Actions::class)->name('actions');
     Route::get('/tickets', Admin\Tickets::class)->name('tickets');
     Route::get('/chatbots', Admin\Chatbots::class)->name('chatbots');
-    Route::get('/status', Admin\Status::class)->name('status');
     Route::get('/profil', Admin\Profil::class)->name('profil');
 
     Route::prefix('recap')->name('recap.')->group(function () {
@@ -50,6 +54,7 @@ Route::middleware(['auth', 'not-suspended', 'type:admin'])->prefix('admin')->nam
     // Gestion : réservé aux admins "accès total" (Gate manage-admins).
     Route::prefix('gestion')->name('gestion.')->middleware('can:manage-admins')->group(function () {
         Route::get('/admins', Admin\Gestion\Admins::class)->name('admins');
+        Route::get('/statuts', Admin\Gestion\Statuts::class)->name('statuts');
     });
 });
 

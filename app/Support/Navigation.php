@@ -22,7 +22,6 @@ class Navigation
                     ['route' => 'admin.actions',  'label' => 'Actions',  'icon' => 'zap'],
                     ['route' => 'admin.tickets',  'label' => 'Tickets',  'icon' => 'ticket'],
                     ['route' => 'admin.chatbots', 'label' => 'Chatbots', 'icon' => 'bot'],
-                    ['route' => 'admin.status',   'label' => 'Status',   'icon' => 'activity'],
                 ],
             ],
             [
@@ -38,7 +37,8 @@ class Navigation
                 'color' => 'rose',
                 'can' => 'manage-admins', // groupe affiché uniquement aux admins "accès total"
                 'items' => [
-                    ['route' => 'admin.gestion.admins', 'label' => 'Administrateurs', 'icon' => 'shield-user'],
+                    ['route' => 'admin.gestion.admins',  'label' => 'Administrateurs', 'icon' => 'shield-user'],
+                    ['route' => 'admin.gestion.statuts', 'label' => 'Statuts',         'icon' => 'tags'],
                 ],
             ],
         ];

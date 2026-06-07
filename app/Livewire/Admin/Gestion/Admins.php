@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Gestion;
 use App\Livewire\Concerns\GeneratesLogin;
 use App\Livewire\Concerns\WithSorting;
 use App\Models\Contrat;
+use App\Models\Site;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Str;
@@ -37,6 +38,9 @@ class Admins extends Component
 
     /** @var array<int, int> ids des contrats accordés (accès granulaire) */
     public array $grantedContratIds = [];
+
+    /** @var array<int, int> ids des sites accordés (accès granulaire) */
+    public array $grantedSiteIds = [];
 
     /** Mot de passe généré, affiché une seule fois après création. */
     public ?string $generatedPassword = null;
@@ -81,12 +85,21 @@ class Admins extends Component
             ->get();
     }
 
+    #[Computed]
+    public function sites()
+    {
+        return Site::with('client.user')
+            ->orderBy('nom')
+            ->get();
+    }
+
     public function create(): void
     {
         $this->reset(['editingId', 'civilite', 'nom', 'prenom', 'login', 'email', 'email_secondaire', 'telephone', 'generatedPassword', 'loginManual']);
         $this->accessLevel = 'restricted';
         $this->grantedClientIds = [];
         $this->grantedContratIds = [];
+        $this->grantedSiteIds = [];
         $this->resetValidation();
         $this->showForm = true;
     }
@@ -113,6 +126,10 @@ class Admins extends Component
             ->where('grantable_type', Contrat::class)
             ->pluck('grantable_id')
             ->all();
+        $this->grantedSiteIds = $admin->accessGrants()
+            ->where('grantable_type', Site::class)
+            ->pluck('grantable_id')
+            ->all();
         $this->generatedPassword = null;
         $this->resetValidation();
         $this->showForm = true;
@@ -135,6 +152,8 @@ class Admins extends Component
             'grantedClientIds.*' => 'integer|exists:users,id',
             'grantedContratIds' => 'array',
             'grantedContratIds.*' => 'integer|exists:contrats,id',
+            'grantedSiteIds' => 'array',
+            'grantedSiteIds.*' => 'integer|exists:sites,id',
         ]);
 
         $attributes = [
@@ -185,6 +204,7 @@ class Admins extends Component
 
         $this->syncGrantsFor($admin, User::class, $this->grantedClientIds);
         $this->syncGrantsFor($admin, Contrat::class, $this->grantedContratIds);
+        $this->syncGrantsFor($admin, Site::class, $this->grantedSiteIds);
     }
 
     /**

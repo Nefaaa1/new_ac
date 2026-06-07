@@ -21,7 +21,6 @@ class AdminAccessTest extends TestCase
             ['admin.actions'],
             ['admin.tickets'],
             ['admin.chatbots'],
-            ['admin.status'],
             ['admin.profil'],
             ['admin.recap.actions'],
             ['admin.recap.tickets'],
