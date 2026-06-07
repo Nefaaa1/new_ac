@@ -27,8 +27,9 @@ jobs:
             cd /var/www/monprojet
 
             echo "📦 Pull du code..."
-            git reset --hard
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
 
             echo "📚 Dépendances PHP..."
             export COMPOSER_ALLOW_SUPERUSER=1
