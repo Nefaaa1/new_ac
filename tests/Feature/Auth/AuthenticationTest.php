@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Livewire\Auth\Login;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -12,43 +14,44 @@ class AuthenticationTest extends TestCase
 
     public function test_login_screen_can_be_rendered(): void
     {
-        $response = $this->get('/login');
-
-        $response->assertStatus(200);
+        $this->get('/login')->assertStatus(200);
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_users_can_authenticate(): void
     {
-        $user = User::factory()->create();
+        User::factory()->create(['login' => 'jdoe']);
 
-        $response = $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'password',
-        ]);
+        Livewire::test(Login::class)
+            ->set('login', 'jdoe')
+            ->set('password', 'password')
+            ->call('login_request')
+            ->assertSet('success', true)
+            ->assertSet('redirectTo', route('client.dashboard'));
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
-        $user = User::factory()->create();
+        User::factory()->create(['login' => 'jdoe']);
 
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'wrong-password',
-        ]);
+        Livewire::test(Login::class)
+            ->set('login', 'jdoe')
+            ->set('password', 'wrong-password')
+            ->call('login_request')
+            ->assertHasErrors('login');
 
         $this->assertGuest();
     }
 
     public function test_users_can_logout(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
 
-        $response = $this->actingAs($user)->post('/logout');
+        $this->actingAs($user)
+            ->post('/logout')
+            ->assertRedirect(route('login'));
 
         $this->assertGuest();
-        $response->assertRedirect('/');
     }
 }

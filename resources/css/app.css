@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Alpine : masque les éléments x-cloak tant qu'Alpine n'a pas initialisé */
+[x-cloak] {
+    display: none !important;
+}

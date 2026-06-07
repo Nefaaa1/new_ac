@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'type' => \App\Http\Middleware\EnsureUserType::class,
+            'not-suspended' => \App\Http\Middleware\EnsureNotSuspended::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

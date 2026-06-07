@@ -7,10 +7,15 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        './app/Livewire/**/*.php',
     ],
 
     theme: {
         extend: {
+            colors: {
+                primary: '#00A4BC',
+                secondary: '#F6A900',
+            },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },

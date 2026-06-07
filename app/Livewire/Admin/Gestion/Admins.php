@@ -1,0 +1,209 @@
+<?php
+
+namespace App\Livewire\Admin\Gestion;
+
+use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
+
+#[Layout('layouts.admin')]
+class Admins extends Component
+{
+    use AuthorizesRequests;
+
+    public bool $showForm = false;
+    public ?int $editingId = null;
+
+    public string $nom = '';
+    public string $prenom = '';
+    public string $login = '';
+    public string $email = '';
+    public string $email_secondaire = '';
+    public string $telephone = '';
+    public string $accessLevel = 'restricted';
+
+    /** @var array<int, int> ids des clients accordés (accès granulaire) */
+    public array $grantedClientIds = [];
+
+    /** Mot de passe généré, affiché une seule fois après création. */
+    public ?string $generatedPassword = null;
+
+    public function mount(): void
+    {
+        $this->authorize('manage-admins');
+    }
+
+    #[Computed]
+    public function admins()
+    {
+        return User::where('type', 'admin')
+            ->withCount('accessGrants')
+            ->orderBy('nom')
+            ->orderBy('prenom')
+            ->get();
+    }
+
+    #[Computed]
+    public function clients()
+    {
+        return User::where('type', 'client')
+            ->orderBy('nom')
+            ->orderBy('prenom')
+            ->get();
+    }
+
+    public function create(): void
+    {
+        $this->reset(['editingId', 'nom', 'prenom', 'login', 'email', 'email_secondaire', 'telephone', 'generatedPassword']);
+        $this->accessLevel = 'restricted';
+        $this->grantedClientIds = [];
+        $this->resetValidation();
+        $this->showForm = true;
+    }
+
+    public function editAdmin(int $id): void
+    {
+        $admin = User::where('type', 'admin')->findOrFail($id);
+
+        $this->editingId = $admin->id;
+        $this->nom = $admin->nom;
+        $this->prenom = $admin->prenom;
+        $this->login = $admin->login;
+        $this->email = $admin->email;
+        $this->email_secondaire = $admin->email_secondaire ?? '';
+        $this->telephone = $admin->telephone ?? '';
+        $this->accessLevel = $admin->access_level;
+        $this->grantedClientIds = $admin->accessGrants()
+            ->where('grantable_type', User::class)
+            ->pluck('grantable_id')
+            ->all();
+        $this->generatedPassword = null;
+        $this->resetValidation();
+        $this->showForm = true;
+    }
+
+    public function save(): void
+    {
+        $this->authorize('manage-admins');
+
+        $data = $this->validate([
+            'nom' => 'required|string|max:255',
+            'prenom' => 'required|string|max:255',
+            'login' => ['required', 'string', 'max:255', Rule::unique('users', 'login')->ignore($this->editingId)->whereNull('deleted_at')],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->editingId)->whereNull('deleted_at')],
+            'email_secondaire' => 'nullable|email|max:255',
+            'telephone' => 'nullable|string|max:50',
+            'accessLevel' => 'required|in:full,restricted',
+            'grantedClientIds' => 'array',
+            'grantedClientIds.*' => 'integer|exists:users,id',
+        ]);
+
+        $attributes = [
+            'nom' => $data['nom'],
+            'prenom' => $data['prenom'],
+            'login' => $data['login'],
+            'email' => $data['email'],
+            'email_secondaire' => $data['email_secondaire'] ?: null,
+            'telephone' => $data['telephone'] ?: null,
+            'access_level' => $data['accessLevel'],
+        ];
+
+        if ($this->editingId) {
+            $admin = User::where('type', 'admin')->findOrFail($this->editingId);
+
+            // Le super-admin ne peut pas être rétrogradé.
+            if ($admin->isSuperAdmin()) {
+                $attributes['access_level'] = 'full';
+                $this->accessLevel = 'full';
+            }
+
+            $admin->update($attributes);
+        } else {
+            $password = Str::password(16);
+            $admin = User::create($attributes + [
+                'type' => 'admin',
+                'password' => $password, // hashé par le cast
+            ]);
+            $this->generatedPassword = $password;
+        }
+
+        $this->syncGrants($admin);
+
+        $this->showForm = false;
+    }
+
+    /**
+     * Synchronise les accès granulaires (clients pour l'instant).
+     */
+    protected function syncGrants(User $admin): void
+    {
+        if ($admin->access_level === 'full') {
+            $admin->accessGrants()->delete();
+
+            return;
+        }
+
+        $admin->accessGrants()->where('grantable_type', User::class)->delete();
+
+        foreach ($this->grantedClientIds as $clientId) {
+            $admin->accessGrants()->create([
+                'grantable_type' => User::class,
+                'grantable_id' => $clientId,
+            ]);
+        }
+    }
+
+    public function toggleSuspend(int $id): void
+    {
+        $this->authorize('manage-admins');
+
+        $admin = User::where('type', 'admin')->findOrFail($id);
+
+        if ($this->isProtected($admin)) {
+            return;
+        }
+
+        $admin->update(['suspended_at' => $admin->isSuspended() ? null : now()]);
+    }
+
+    public function deleteAdmin(int $id): void
+    {
+        $this->authorize('manage-admins');
+
+        $admin = User::where('type', 'admin')->findOrFail($id);
+
+        if ($this->isProtected($admin)) {
+            return;
+        }
+
+        $admin->delete();
+    }
+
+    public function closeForm(): void
+    {
+        $this->showForm = false;
+        $this->resetValidation();
+    }
+
+    public function dismissPassword(): void
+    {
+        $this->generatedPassword = null;
+    }
+
+    /**
+     * Compte protégé contre suspension / suppression (soi-même ou super-admin).
+     */
+    protected function isProtected(User $admin): bool
+    {
+        return $admin->id === auth()->id() || $admin->isSuperAdmin();
+    }
+
+    public function render()
+    {
+        return view('livewire.admin.gestion.admins');
+    }
+}
