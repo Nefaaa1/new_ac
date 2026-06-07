@@ -33,8 +33,9 @@ class ContratPicker extends Component
     public function mount(): void
     {
         // Édition : pré-remplit le libellé si un contrat est déjà sélectionné.
+        // withTrashed : un contrat supprimé (soft delete) reste affiché tant qu'il est lié.
         if ($this->contratId) {
-            $this->search = Contrat::accessibleBy(auth()->user())
+            $this->search = Contrat::withTrashed()->accessibleBy(auth()->user())
                 ->whereKey($this->contratId)
                 ->value('libelle') ?? '';
         }

@@ -34,6 +34,9 @@ class Actions extends Component
     public ?int $contrat_id = null;
     public string $commentaire = '';
 
+    /** Vrai si l'action en cours d'édition est liée à un contrat supprimé (soft delete). */
+    public bool $contratTrashed = false;
+
     public function mount(): void
     {
         $this->sortField = $this->sortField ?: 'date';
@@ -43,15 +46,17 @@ class Actions extends Component
     #[Computed]
     public function actions()
     {
+        // withTrashed : on garde les actions dont le contrat a été supprimé (soft delete),
+        // afin de les afficher avec une alerte plutôt que de les faire disparaître.
         $query = Action::query()
-            ->with('contrat.client.user')
-            ->whereHas('contrat', fn ($q) => $q->accessibleBy(auth()->user()))
+            ->with(['contrat' => fn ($q) => $q->withTrashed()->with('client.user')])
+            ->whereHas('contrat', fn ($q) => $q->withTrashed()->accessibleBy(auth()->user()))
             ->when($this->search !== '', function ($query) {
                 $term = '%'.$this->search.'%';
                 $query->where(function ($sub) use ($term) {
                     $sub->where('intitule', 'like', $term)
                         ->orWhere('commentaire', 'like', $term)
-                        ->orWhereHas('contrat', fn ($c) => $c->where('libelle', 'like', $term));
+                        ->orWhereHas('contrat', fn ($c) => $c->withTrashed()->where('libelle', 'like', $term));
                 });
             });
 
@@ -69,7 +74,7 @@ class Actions extends Component
 
     public function create(): void
     {
-        $this->reset(['editingId', 'intitule', 'temps', 'type', 'contrat_id', 'commentaire']);
+        $this->reset(['editingId', 'intitule', 'temps', 'type', 'contrat_id', 'commentaire', 'contratTrashed']);
         $this->date = now()->format('Y-m-d');
         $this->formNonce++;
         $this->resetValidation();
@@ -78,7 +83,9 @@ class Actions extends Component
 
     public function editAction(int $id): void
     {
-        $action = Action::whereHas('contrat', fn ($q) => $q->accessibleBy(auth()->user()))->findOrFail($id);
+        $action = Action::whereHas('contrat', fn ($q) => $q->withTrashed()->accessibleBy(auth()->user()))
+            ->with(['contrat' => fn ($q) => $q->withTrashed()])
+            ->findOrFail($id);
 
         $this->editingId = $action->id;
         $this->intitule = $action->intitule;
@@ -87,6 +94,7 @@ class Actions extends Component
         $this->type = $action->type;
         $this->contrat_id = $action->contrat_id;
         $this->commentaire = $action->commentaire ?? '';
+        $this->contratTrashed = $action->contrat?->trashed() ?? false;
         $this->formNonce++;
         $this->resetValidation();
         $this->showForm = true;
@@ -103,8 +111,9 @@ class Actions extends Component
             'commentaire' => 'nullable|string|max:2000',
         ]);
 
-        // Le contrat doit être accessible à l'admin connecté.
-        Contrat::accessibleBy(auth()->user())->findOrFail($data['contrat_id']);
+        // Le contrat doit être accessible à l'admin connecté (withTrashed : on tolère
+        // qu'une action édité reste rattachée à un contrat archivé sans forcer la réaffectation).
+        Contrat::withTrashed()->accessibleBy(auth()->user())->findOrFail($data['contrat_id']);
 
         $attributes = [
             'intitule' => $data['intitule'],
@@ -116,7 +125,7 @@ class Actions extends Component
         ];
 
         if ($this->editingId) {
-            $action = Action::whereHas('contrat', fn ($q) => $q->accessibleBy(auth()->user()))->findOrFail($this->editingId);
+            $action = Action::whereHas('contrat', fn ($q) => $q->withTrashed()->accessibleBy(auth()->user()))->findOrFail($this->editingId);
             $action->update($attributes);
         } else {
             Action::create($attributes);
@@ -127,7 +136,7 @@ class Actions extends Component
 
     public function deleteAction(int $id): void
     {
-        Action::whereHas('contrat', fn ($q) => $q->accessibleBy(auth()->user()))->findOrFail($id)->delete();
+        Action::whereHas('contrat', fn ($q) => $q->withTrashed()->accessibleBy(auth()->user()))->findOrFail($id)->delete();
     }
 
     public function closeForm(): void

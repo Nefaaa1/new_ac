@@ -114,6 +114,52 @@ class ActionsCrudTest extends TestCase
             ->assertDontSee('Action cachee');
     }
 
+    public function test_actions_of_a_soft_deleted_contrat_still_appear_with_alert(): void
+    {
+        $contrat = Contrat::factory()->create();
+        Action::factory()->create(['contrat_id' => $contrat->id, 'intitule' => 'Action orpheline']);
+        $contrat->delete(); // soft delete
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Actions::class)
+            ->assertSee('Action orpheline')
+            ->assertSee('Contrat supprimé');
+    }
+
+    public function test_orphaned_action_can_still_be_edited_and_deleted(): void
+    {
+        $contrat = Contrat::factory()->create();
+        $action = Action::factory()->create(['contrat_id' => $contrat->id]);
+        $contrat->delete();
+
+        $component = Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Actions::class)
+            ->call('editAction', $action->id)
+            ->assertSet('contratTrashed', true)
+            ->set('intitule', 'Mise à jour orpheline')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('actions', ['id' => $action->id, 'intitule' => 'Mise à jour orpheline']);
+
+        $component->call('deleteAction', $action->id);
+        $this->assertSoftDeleted('actions', ['id' => $action->id]);
+    }
+
+    public function test_restricted_admin_still_sees_orphaned_action_of_granted_contrat(): void
+    {
+        $contrat = Contrat::factory()->create();
+        Action::factory()->create(['contrat_id' => $contrat->id, 'intitule' => 'Visible orpheline']);
+
+        $admin = User::factory()->restricted()->create();
+        $admin->accessGrants()->create(['grantable_type' => Contrat::class, 'grantable_id' => $contrat->id]);
+        $contrat->delete();
+
+        Livewire::actingAs($admin)
+            ->test(Actions::class)
+            ->assertSee('Visible orpheline');
+    }
+
     public function test_sorting_toggles_and_orders_by_intitule(): void
     {
         Action::factory()->create(['intitule' => 'Zeta']);

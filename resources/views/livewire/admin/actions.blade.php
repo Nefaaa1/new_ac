@@ -54,12 +54,23 @@
                             </span>
                         </td>
                         <td class="px-5 py-3">
-                            @if($action->contrat)
+                            @if($action->contrat && ! $action->contrat->trashed())
                                 <a href="{{ route('admin.contrats.show', $action->contrat) }}" wire:navigate
                                    class="group inline-flex items-center gap-1.5 text-zinc-700 hover:text-primary">
                                     <x-lucide-file-text class="h-3.5 w-3.5 text-secondary" />
                                     <span class="truncate">{{ $action->contrat->libelle }}</span>
                                 </a>
+                            @elseif($action->contrat)
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="inline-flex items-center gap-1.5 text-zinc-500">
+                                        <x-lucide-file-text class="h-3.5 w-3.5 text-zinc-300" />
+                                        <span class="truncate line-through decoration-red-300">{{ $action->contrat->libelle }}</span>
+                                    </span>
+                                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600"
+                                          title="Le contrat lié a été supprimé">
+                                        <x-lucide-triangle-alert class="h-3 w-3" /> Contrat supprimé
+                                    </span>
+                                </span>
                             @else
                                 <span class="text-zinc-300">—</span>
                             @endif
@@ -137,11 +148,19 @@
                     </x-select>
 
                     {{-- Autocomplétion contrat (composant réutilisable) --}}
-                    <div class="relative">
-                        <livewire:admin.contrat-picker wire:model="contrat_id" :key="'contrat-picker-'.$formNonce" />
-                        @error('contrat_id')
-                            <p class="absolute left-1 top-full mt-0.5 whitespace-nowrap text-[11px] leading-tight text-red-600">{{ $message }}</p>
-                        @enderror
+                    <div>
+                        @if($contratTrashed)
+                            <div class="mb-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                                <x-lucide-triangle-alert class="mt-0.5 h-4 w-4 shrink-0" />
+                                <span>Le contrat actuellement lié a été <strong>supprimé</strong>. Vous pouvez conserver l'action telle quelle ou la rattacher à un autre contrat.</span>
+                            </div>
+                        @endif
+                        <div class="relative">
+                            <livewire:admin.contrat-picker wire:model="contrat_id" :key="'contrat-picker-'.$formNonce" />
+                            @error('contrat_id')
+                                <p class="absolute left-1 top-full mt-0.5 whitespace-nowrap text-[11px] leading-tight text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
 
                     <div>
