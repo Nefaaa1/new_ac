@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Concerns\RestrictsAccess;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -15,12 +16,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['type', 'access_level', 'login', 'password', 'nom', 'prenom', 'email', 'email_secondaire', 'telephone', 'suspended_at'])]
+#[Fillable(['type', 'access_level', 'login', 'password', 'civilite', 'nom', 'prenom', 'email', 'email_secondaire', 'telephone', 'suspended_at'])]
 #[Hidden(['password'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, RestrictsAccess, SoftDeletes;
 
     /** Login du super-admin principal : protégé contre suspension / rétrogradation. */
     public const SUPER_ADMIN_LOGIN = 'antoinepw';
@@ -54,6 +55,14 @@ class User extends Authenticatable
     public function note(): HasOne
     {
         return $this->hasOne(Note::class);
+    }
+
+    /**
+     * Fiche métier (extension 1-1) pour un utilisateur de type client.
+     */
+    public function client(): HasOne
+    {
+        return $this->hasOne(Client::class);
     }
 
     /**

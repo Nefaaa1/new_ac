@@ -48,9 +48,9 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 **Pièges :** après modif des routes en local, penser à `php artisan route:clear` (cache). Re-`route:cache` en prod après deploy.
 
 ## Auth & User
-- Table `users` : `id`, `type` (enum admin|client), `access_level` (enum full|restricted), `login` (unique), `password`, `nom`, `prenom`, `email` (unique), `email_secondaire?`, `telephone?`, `suspended_at?`, timestamps, `softDeletes`
-- `User` : trait `SoftDeletes`, accessor `name` = "Prénom Nom", helpers `isAdmin()`, `hasFullAccess()`, `isSuspended()`, `isSuperAdmin()` (login === `User::SUPER_ADMIN_LOGIN`), `canAccess($resource)`
-- Relations : `hasOne note()` (pense-bête), `hasMany favorites()`, `hasMany accessGrants()`
+- Table `users` : `id`, `type` (enum admin|client), `access_level` (enum full|restricted), `login` (unique), `password`, `civilite?` (enum M|Mme), `nom`, `prenom`, `email` (unique), `email_secondaire?`, `telephone?`, `suspended_at?`, timestamps, `softDeletes`
+- `User` : traits `SoftDeletes` + `RestrictsAccess` (scope `accessibleBy($admin)`), accessor `name` = "Prénom Nom", helpers `isAdmin()`, `hasFullAccess()`, `isSuspended()`, `isSuperAdmin()` (login === `User::SUPER_ADMIN_LOGIN`), `canAccess($resource)`
+- Relations : `hasOne note()` (pense-bête), `hasMany favorites()`, `hasMany accessGrants()`, `hasOne client()` (fiche métier si type=client)
 - Middleware `type` (alias dans `bootstrap/app.php`) → `EnsureUserType`, usage `->middleware('type:admin')` (403 sinon)
 - Middleware `not-suspended` → `EnsureNotSuspended` : déconnecte immédiatement un compte suspendu (sur groupes admin/client)
 - Seeder admin principal : `php artisan db:seed --class=AdminUserSeeder` (compte `antoinepw` = super-admin `access_level=full`, idempotent, mdp généré affiché une fois)
@@ -64,6 +64,17 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - **Application** : trait `App\Models\Concerns\RestrictsAccess` → scope `Model::accessibleBy($admin)` (renvoie tout si full, sinon filtre sur les grants). À poser sur les futurs `Site`/`Contrat`. `User::canAccess($resource)` pour un check unitaire.
 - **Garde-fous** : Gate `manage-admins` (full only) sur la route gestion + sidebar (clé `'can'` du groupe Navigation) ; impossible de se suspendre/supprimer soi-même ; super-admin (`antoinepw`) protégé (ni suspension, ni rétrogradation).
 - **Formulaire = slide-over** (panneau glissant depuis la droite) : toujours dans le DOM, visibilité pilotée par `x-data="{ open: @entangle('showForm') }"` + `x-transition` translate (pour animer entrée/sortie — ne PAS revenir à un `@if` qui casserait l'animation). Structure interne : en-tête figé / corps `flex-1 overflow-y-auto` / pied figé.
+
+## Clients (CRUD)
+- **Un client = un `User` (type=client)** loginable + une **fiche métier 1‑1** dans la table `clients`.
+- Table `clients` : `id` (identité métier, future FK pour contrats/sites), `user_id` (unique, `cascadeOnDelete`), `societe?`, `lienapp?`, `email3?`, timestamps. Modèle `Client belongsTo User` ; `User hasOne client()`.
+- **Pattern = composition (extension 1‑1)**, PAS d'héritage : Eloquent n'a pas de STI natif → on garde l'auth sur `users` et les champs métier isolés dans `clients`. Étendre un client = ajouter une colonne à `clients` (ne pas polluer `users`).
+- Page `Admin\Clients` (route `admin.clients`) : CRUD complet (même UX que `Gestion\Admins` — tableau + slide-over + mot de passe généré). `save()` crée/MAJ le `User` puis `updateOrCreate` la ligne `clients`.
+- **`societe` obligatoire** (validation `required` ; colonne reste nullable en DB pour les anciennes lignes), **mise en avant** dans le tableau (chip + icône), **tri par défaut = société** (sous-requête `Client::select('societe')->whereColumn(...)`), puis nom.
+- **Recherche libre** : champ `<x-text-input>` (composant maison, cohérence design) + icône loupe/croix, `#[Url(except:'')] $search` (nom/prénom/société, `wire:model.live.debounce.300ms`).
+- **Deep-link recherche globale** : `#[Url(except:null)] $open` (id client) → `mount()` ouvre directement le slide-over du client ciblé (si accessible) ; `closeForm()` remet `open=null`. Edit/delete/save sont gardés par `accessibleBy` (un restreint ne peut pas ouvrir un client non accordé).
+- **Filtrage par accès** : la liste utilise `User::where('type','client')->accessibleBy(auth()->user())` → un admin restreint ne voit que ses clients accordés (grants `grantable_type = User::class`).
+- **Tableaux admin (clients + gestion)** : en-tête `bg-primary text-white`, lignes zébrées `odd:bg-white even:bg-primary/[0.04]` + survol `hover:bg-secondary/10`, avatars en dégradé primary→secondary, icône `mail` secondary devant l'email.
 
 ## Dashboard admin — note & favoris
 - **Note pense-bête** : table `notes` (`user_id` unique, `content`) → `User hasOne`. Composant `Admin\Notepad`
@@ -82,7 +93,7 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - **Pattern « providers » calqué sur `Navigation`** dans `app/Support/Search/` :
   - `SearchSource` (interface `search(string): SearchResult[]`), `SearchResult` (DTO readonly : group/label/sublabel/icon/url/score).
   - `Search` = registre : `query()` interroge toutes les `sources()`, trie par `score` desc, plafonne à `LIMIT` (15), regroupe. `MIN_CHARS=2`.
-  - `Search/Sources/{Client,Site,Contrat}Source` : **STUBS qui renvoient `[]`** pour l'instant. ClientSource a l'implémentation réelle en commentaire (données users prêtes). Activer une entité = remplir son source, rien d'autre à toucher.
+  - `Search/Sources/ClientSource` : **actif** (cherche nom/prénom/société, filtré par `accessibleBy`, deep-link `route('admin.clients', ['search' => nom, 'open' => id])` → ouvre la fiche). `Site`/`Contrat`Source : **stubs `[]`** jusqu'à leurs modèles. Activer une entité = remplir son source, rien d'autre à toucher.
   - Ajouter une entité recherchable → nouvelle classe `SearchSource` + l'enregistrer dans `Search::sources()`.
 
 ## Structure views
@@ -98,6 +109,7 @@ livewire/client/dashboard.blade.php
 components/admin/page-header.blade.php  ← props: title, subtitle, icon (en-tête de page admin)
 components/admin/empty-state.blade.php  ← props: icon, title (état « en construction »)
 components/text-input.blade.php     ← props: label, size, name, error (erreur intégrée)
+components/select.blade.php          ← jumeau de text-input pour les <select> (options en slot)
 components/primary-button.blade.php ← props: icon (lucide), text, size, full ; hover inversé
 components/input-label / input-error / auth-session-status
 ```
@@ -110,9 +122,9 @@ Topbar : `<livewire:admin.global-search>` (recherche universelle) + `<livewire:a
 
 ## Composants Livewire (app/Livewire/)
 - `Auth\Login` (#[Layout guest])
-- `Admin\*` (#[Layout admin], full-page) : `Dashboard`, `Sites`, `Contrats`, `Clients`, `Actions`, `Tickets`,
+- `Admin\*` (#[Layout admin], full-page) : `Dashboard`, `Sites`, `Contrats`, `Actions`, `Tickets`,
   `Chatbots`, `Status`, `Profil`, `Recap\Actions`, `Recap\Tickets` — pages simples = en-tête + empty-state ;
-  `Gestion\Admins` = CRUD admins + suspension + accès (cf. section dédiée)
+  `Clients` = CRUD clients (cf. section Clients) ; `Gestion\Admins` = CRUD admins + suspension + accès (cf. section dédiée)
 - `Admin\*` (imbriqués, sans #[Layout]) : `Notepad` (note auto-save), `Favorites` (liste dashboard),
   `FavoriteToggle` (étoile topbar), `GlobalSearch` (recherche universelle topbar → `App\Support\Search`)
 - `Client\Dashboard` (#[Layout panel])
@@ -120,6 +132,7 @@ Topbar : `<livewire:admin.global-search>` (recherche universelle) + `<livewire:a
 - `App\Support\SystemMetrics` : lecture `/proc` Linux — **demo mode automatique sur Windows** (valeurs aléatoires + badge jaune), toujours conserver ce comportement
 
 ## Conventions & pièges connus
+- Formulaires admin/clients : champs via `<x-text-input>` / `<x-select>` (cohérence design). Login **auto-généré** `prénom.nom` (`Str::slug(... , '.')`) par le trait `App\Livewire\Concerns\GeneratesLogin` — création uniquement, toujours éditable, stoppé dès saisie manuelle (`loginManual`) ou en édition (`editingId`). Le composant hôte doit exposer `editingId/nom/prenom/login` ; mettre `nom`/`prenom`/`login` en `wire:model.blur`.
 - `wire:model` property et `wire:submit` method → noms différents obligatoires (ex. propriété `login` → méthode `login_request`)
 - Auth sur le champ `login` (pas l'email) : `Auth::attempt(['login' => ..., 'password' => ...])`
 - Protéger les routes par rôle avec `type:admin` / `type:client`

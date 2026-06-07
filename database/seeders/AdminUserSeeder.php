@@ -30,6 +30,7 @@ class AdminUserSeeder extends Seeder
             'access_level' => 'full',
             'login' => User::SUPER_ADMIN_LOGIN,
             'password' => Hash::make($password),
+            'civilite' => 'M',
             'nom' => 'Fagnere',
             'prenom' => 'Antoine',
             'email' => 'antoine.fagnere@gmail.com',

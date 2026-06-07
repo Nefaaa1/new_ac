@@ -28,25 +28,25 @@
     </div>
 
     {{-- Tableau --}}
-    <div class="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+    <div class="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div class="overflow-x-auto">
-        <table class="w-full divide-y divide-zinc-200 text-sm">
-            <thead class="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
-                <tr>
-                    <th class="px-5 py-3 font-medium">Administrateur</th>
-                    <th class="px-5 py-3 font-medium">Email</th>
-                    <th class="px-5 py-3 font-medium">Accès</th>
-                    <th class="px-5 py-3 font-medium">Statut</th>
-                    <th class="px-5 py-3 text-right font-medium">Actions</th>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-primary text-left text-xs font-semibold uppercase tracking-wider text-white">
+                    <th class="px-5 py-3.5">Administrateur</th>
+                    <th class="px-5 py-3.5">Email</th>
+                    <th class="px-5 py-3.5">Accès</th>
+                    <th class="px-5 py-3.5">Statut</th>
+                    <th class="px-5 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-zinc-100">
                 @forelse($this->admins as $admin)
                     @php $protected = $admin->id === auth()->id() || $admin->isSuperAdmin(); @endphp
-                    <tr wire:key="admin-{{ $admin->id }}" class="hover:bg-zinc-50/60">
+                    <tr wire:key="admin-{{ $admin->id }}" class="transition odd:bg-white even:bg-primary/[0.04] hover:bg-secondary/10">
                         <td class="px-5 py-3">
                             <div class="flex items-center gap-3">
-                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 text-xs font-semibold text-primary">
                                     {{ strtoupper(mb_substr($admin->prenom, 0, 1).mb_substr($admin->nom, 0, 1)) }}
                                 </span>
                                 <div>
@@ -60,7 +60,12 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-5 py-3 text-zinc-600">{{ $admin->email }}</td>
+                        <td class="px-5 py-3 text-zinc-600">
+                            <span class="inline-flex items-center gap-1.5">
+                                <x-lucide-mail class="h-3.5 w-3.5 text-secondary" />
+                                {{ $admin->email }}
+                            </span>
+                        </td>
                         <td class="px-5 py-3">
                             @if($admin->hasFullAccess())
                                 <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
@@ -86,7 +91,7 @@
                         <td class="px-5 py-3">
                             <div class="flex items-center justify-end gap-1">
                                 <button wire:click="editAdmin({{ $admin->id }})" type="button" title="Modifier"
-                                        class="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700">
+                                        class="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 hover:bg-primary/10 hover:text-primary">
                                     <x-lucide-pencil class="h-4 w-4" />
                                 </button>
 
@@ -140,42 +145,24 @@
 
                 <form wire:submit="save" class="flex flex-1 flex-col overflow-hidden">
                     <div class="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-medium text-zinc-500">Prénom</label>
-                            <input type="text" wire:model="prenom" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-0">
-                            @error('prenom') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="text-xs font-medium text-zinc-500">Nom</label>
-                            <input type="text" wire:model="nom" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-0">
-                            @error('nom') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-medium text-zinc-500">Identifiant (login)</label>
-                        <input type="text" wire:model="login" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-0">
-                        @error('login') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-medium text-zinc-500">Email</label>
-                        <input type="email" wire:model="email" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-0">
-                        @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
+                    <x-select name="civilite" wire:model="civilite">
+                        <option value="">Civilité…</option>
+                        <option value="M">M.</option>
+                        <option value="Mme">Mme</option>
+                    </x-select>
 
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-medium text-zinc-500">Email secondaire <span class="text-zinc-300">(optionnel)</span></label>
-                            <input type="email" wire:model="email_secondaire" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-0">
-                            @error('email_secondaire') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="text-xs font-medium text-zinc-500">Téléphone <span class="text-zinc-300">(optionnel)</span></label>
-                            <input type="text" wire:model="telephone" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-0">
-                            @error('telephone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        </div>
+                        <x-text-input placeholder="Prénom" name="prenom" wire:model.blur="prenom" />
+                        <x-text-input placeholder="Nom" name="nom" wire:model.blur="nom" />
+                    </div>
+
+                    <x-text-input placeholder="Identifiant (login)" name="login" wire:model.blur="login" />
+
+                    <x-text-input placeholder="Email" name="email" type="email" wire:model="email" />
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <x-text-input placeholder="Email secondaire (optionnel)" name="email_secondaire" type="email" wire:model="email_secondaire" />
+                        <x-text-input placeholder="Téléphone (optionnel)" name="telephone" wire:model="telephone" />
                     </div>
 
                     {{-- Niveau d'accès --}}

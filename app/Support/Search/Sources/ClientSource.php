@@ -2,38 +2,44 @@
 
 namespace App\Support\Search\Sources;
 
+use App\Models\User;
+use App\Support\Search\Search;
 use App\Support\Search\SearchResult;
 use App\Support\Search\SearchSource;
 
 /**
- * Recherche dans les clients (User type=client).
- *
- * STUB — renvoie [] pour l'instant. Pour l'activer, décommenter le corps :
- * les données existent déjà (table users), il suffit de retirer le `return []`.
+ * Recherche dans les clients (User type=client + fiche société).
+ * Respecte les accès de l'admin connecté (un restreint ne trouve que ses clients).
  */
 class ClientSource implements SearchSource
 {
     public function search(string $term): array
     {
-        return [];
+        $admin = auth()->user();
 
-        // return \App\Models\User::query()
-        //     ->where('type', 'client')
-        //     ->where(fn ($q) => $q
-        //         ->where('nom', 'like', "%{$term}%")
-        //         ->orWhere('prenom', 'like', "%{$term}%")
-        //         ->orWhere('email', 'like', "%{$term}%")
-        //         ->orWhere('login', 'like', "%{$term}%"))
-        //     ->limit(\App\Support\Search\Search::LIMIT)
-        //     ->get()
-        //     ->map(fn ($u) => new SearchResult(
-        //         group: 'Clients',
-        //         label: $u->name,
-        //         sublabel: $u->email,
-        //         icon: 'users',
-        //         url: route('admin.clients'), // → route('admin.clients.show', $u) quand la fiche existera
-        //         score: str_starts_with(mb_strtolower($u->nom), mb_strtolower($term)) ? 100 : 50,
-        //     ))
-        //     ->all();
+        if (! $admin) {
+            return [];
+        }
+
+        return User::query()
+            ->where('type', 'client')
+            ->accessibleBy($admin)
+            ->with('client')
+            ->where(function ($q) use ($term) {
+                $q->where('nom', 'like', "%{$term}%")
+                    ->orWhere('prenom', 'like', "%{$term}%")
+                    ->orWhereHas('client', fn ($c) => $c->where('societe', 'like', "%{$term}%"));
+            })
+            ->limit(Search::LIMIT)
+            ->get()
+            ->map(fn (User $u) => new SearchResult(
+                group: 'Clients',
+                label: $u->name,
+                sublabel: $u->client?->societe,
+                icon: 'users',
+                url: route('admin.clients', ['search' => $u->nom, 'open' => $u->id]),
+                score: str_starts_with(mb_strtolower($u->nom), mb_strtolower($term)) ? 100 : 50,
+            ))
+            ->all();
     }
 }

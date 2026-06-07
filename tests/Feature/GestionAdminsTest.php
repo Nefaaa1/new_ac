@@ -44,6 +44,7 @@ class GestionAdminsTest extends TestCase
         $component = Livewire::actingAs(User::factory()->admin()->create())
             ->test(Admins::class)
             ->call('create')
+            ->set('civilite', 'M')
             ->set('prenom', 'Jean')
             ->set('nom', 'Dupont')
             ->set('login', 'jdupont')
@@ -67,6 +68,7 @@ class GestionAdminsTest extends TestCase
         Livewire::actingAs(User::factory()->admin()->create())
             ->test(Admins::class)
             ->call('create')
+            ->set('civilite', 'Mme')
             ->set('prenom', 'Amélie')
             ->set('nom', 'Roux')
             ->set('login', 'aroux')
@@ -113,6 +115,39 @@ class GestionAdminsTest extends TestCase
             ->set('email', 'x@y.fr')
             ->call('save')
             ->assertHasErrors('login');
+    }
+
+    public function test_login_is_auto_generated_from_name(): void
+    {
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Admins::class)
+            ->call('create')
+            ->set('prenom', 'Jean')
+            ->set('nom', 'Dupont')
+            ->assertSet('login', 'jean.dupont');
+    }
+
+    public function test_manual_login_is_not_overwritten(): void
+    {
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Admins::class)
+            ->call('create')
+            ->set('prenom', 'Jean')
+            ->set('login', 'perso')   // saisie manuelle
+            ->set('nom', 'Dupont')    // ne doit pas écraser
+            ->assertSet('login', 'perso');
+    }
+
+    public function test_login_not_generated_when_editing(): void
+    {
+        $admin = User::factory()->admin()->create(['login' => 'original']);
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Admins::class)
+            ->call('editAdmin', $admin->id)
+            ->set('prenom', 'Nouveau')
+            ->set('nom', 'Nom')
+            ->assertSet('login', 'original');
     }
 
     public function test_admin_cannot_suspend_themselves(): void

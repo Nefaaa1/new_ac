@@ -27,6 +27,7 @@ class UserFactory extends Factory
             'type' => 'client',
             'login' => fake()->unique()->userName(),
             'password' => static::$password ??= Hash::make('password'),
+            'civilite' => fake()->randomElement(['M', 'Mme']),
             'nom' => fake()->lastName(),
             'prenom' => fake()->firstName(),
             'email' => fake()->unique()->safeEmail(),

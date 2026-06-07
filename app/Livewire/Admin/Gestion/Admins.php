@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Gestion;
 
+use App\Livewire\Concerns\GeneratesLogin;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Str;
@@ -14,10 +15,12 @@ use Livewire\Component;
 class Admins extends Component
 {
     use AuthorizesRequests;
+    use GeneratesLogin;
 
     public bool $showForm = false;
     public ?int $editingId = null;
 
+    public string $civilite = '';
     public string $nom = '';
     public string $prenom = '';
     public string $login = '';
@@ -58,7 +61,7 @@ class Admins extends Component
 
     public function create(): void
     {
-        $this->reset(['editingId', 'nom', 'prenom', 'login', 'email', 'email_secondaire', 'telephone', 'generatedPassword']);
+        $this->reset(['editingId', 'civilite', 'nom', 'prenom', 'login', 'email', 'email_secondaire', 'telephone', 'generatedPassword', 'loginManual']);
         $this->accessLevel = 'restricted';
         $this->grantedClientIds = [];
         $this->resetValidation();
@@ -70,6 +73,8 @@ class Admins extends Component
         $admin = User::where('type', 'admin')->findOrFail($id);
 
         $this->editingId = $admin->id;
+        $this->loginManual = true; // utilisateur existant : pas de génération auto
+        $this->civilite = $admin->civilite ?? '';
         $this->nom = $admin->nom;
         $this->prenom = $admin->prenom;
         $this->login = $admin->login;
@@ -91,6 +96,7 @@ class Admins extends Component
         $this->authorize('manage-admins');
 
         $data = $this->validate([
+            'civilite' => 'required|in:M,Mme',
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'login' => ['required', 'string', 'max:255', Rule::unique('users', 'login')->ignore($this->editingId)->whereNull('deleted_at')],
@@ -103,6 +109,7 @@ class Admins extends Component
         ]);
 
         $attributes = [
+            'civilite' => $data['civilite'],
             'nom' => $data['nom'],
             'prenom' => $data['prenom'],
             'login' => $data['login'],
