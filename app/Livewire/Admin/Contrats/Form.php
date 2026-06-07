@@ -99,12 +99,12 @@ class Form extends Component
             'libelle' => 'required|string|max:255',
             'client_id' => 'nullable|integer|exists:clients,id',
             'site_web' => 'nullable|string|max:255',
-            'type' => ['nullable', 'in:'.implode(',', array_keys(Contrat::TYPES))],
+            'type' => ['required', 'in:'.implode(',', array_keys(Contrat::TYPES))],
             'date_debut' => 'nullable|date',
             'date_fin' => 'nullable|date|after_or_equal:date_debut',
-            'taux_horaire' => 'nullable|numeric|min:0',
-            'cycle_facturation' => ['nullable', 'in:'.implode(',', array_keys(Contrat::CYCLES))],
-            'credits' => 'nullable|integer|min:0',
+            'taux_horaire' => 'required|numeric|min:0',
+            'cycle_facturation' => ['required', 'in:'.implode(',', array_keys(Contrat::CYCLES))],
+            'credits' => 'required|integer|min:0',
             'reseaux' => 'array',
             'reseaux.*.reseau' => ['required', 'in:'.implode(',', array_keys(ContratReseau::RESEAUX))],
             'reseaux.*.identifiant' => 'nullable|string|max:255',
@@ -116,6 +116,11 @@ class Form extends Component
     protected function validationAttributes(): array
     {
         return [
+            'libelle' => 'libellé',
+            'type' => 'type de contrat',
+            'cycle_facturation' => 'cycle de facturation',
+            'taux_horaire' => 'taux horaire',
+            'credits' => 'nombre de crédits',
             'reseaux.*.reseau' => 'réseau',
         ];
     }

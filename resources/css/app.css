@@ -1,3 +1,5 @@
+@import 'flatpickr/dist/flatpickr.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,4 +7,84 @@
 /* Alpine : masque les éléments x-cloak tant qu'Alpine n'a pas initialisé */
 [x-cloak] {
     display: none !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* Flatpickr — thème aligné sur les couleurs du projet                  */
+/* primary #00A4BC (teal) · secondary #F6A900 (amber)                   */
+/* ------------------------------------------------------------------ */
+.flatpickr-calendar {
+    border-radius: 14px;
+    border: 1px solid #e4e4e7;
+    box-shadow: 0 12px 32px -12px rgba(24, 24, 27, 0.35);
+    font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+}
+
+.flatpickr-months,
+.flatpickr-month {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year {
+    font-weight: 600;
+    color: #18181b;
+}
+
+.flatpickr-weekday {
+    color: #00A4BC;
+    font-weight: 600;
+}
+
+/* Flèches de navigation mois */
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg {
+    fill: #00A4BC;
+}
+
+/* Survol d'un jour */
+.flatpickr-day:hover,
+.flatpickr-day:focus {
+    background: rgba(0, 164, 188, 0.10);
+    border-color: transparent;
+}
+
+/* Aujourd'hui → liseré ambre */
+.flatpickr-day.today {
+    border-color: #F6A900;
+}
+.flatpickr-day.today:hover,
+.flatpickr-day.today:focus {
+    background: #F6A900;
+    border-color: #F6A900;
+    color: #fff;
+}
+
+/* Jour sélectionné → teal plein */
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.selected:focus,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: #00A4BC;
+    border-color: #00A4BC;
+    color: #fff;
+}
+.flatpickr-day.selected.today {
+    border-color: #00A4BC;
+}
+
+/* Pointe (caret) de la fenêtre */
+.flatpickr-calendar.arrowTop:after {
+    border-bottom-color: #fff;
+}
+.flatpickr-calendar.arrowBottom:after {
+    border-top-color: #fff;
+}
+
+/* Sélecteur d'heure (cohérence si activé un jour) */
+.flatpickr-time input:focus,
+.numInputWrapper:hover {
+    background: rgba(0, 164, 188, 0.06);
 }

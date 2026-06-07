@@ -68,6 +68,20 @@ class ContratsCrudTest extends TestCase
             ->assertHasErrors(['libelle' => 'required']);
     }
 
+    public function test_type_cycle_taux_and_credits_are_required(): void
+    {
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Form::class)
+            ->set('libelle', 'Test')
+            ->call('save')
+            ->assertHasErrors([
+                'type' => 'required',
+                'cycle_facturation' => 'required',
+                'taux_horaire' => 'required',
+                'credits' => 'required',
+            ]);
+    }
+
     public function test_reseau_type_is_required_when_a_row_exists(): void
     {
         Livewire::actingAs(User::factory()->admin()->create())

@@ -65,8 +65,8 @@
                 <x-text-input label="Site web" name="site_web" floatError wire:model="site_web" placeholder="https://…" />
 
                 <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                    <x-text-input label="Début du contrat" name="date_debut" type="date" floatError wire:model="date_debut" />
-                    <x-text-input label="Fin (facultatif)" name="date_fin" type="date" floatError wire:model="date_fin" />
+                    <x-date-input label="Début du contrat" name="date_debut" model="date_debut" floatError />
+                    <x-date-input label="Fin (facultatif)" name="date_fin" model="date_fin" floatError />
                 </div>
             </section>
 
