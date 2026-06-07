@@ -124,7 +124,7 @@ class GestionAdminsTest extends TestCase
             ->call('create')
             ->set('prenom', 'Jean')
             ->set('nom', 'Dupont')
-            ->assertSet('login', 'jean.dupont');
+            ->assertSet('login', 'jeandupont');
     }
 
     public function test_manual_login_is_not_overwritten(): void

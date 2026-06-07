@@ -129,6 +129,25 @@ class ClientsCrudTest extends TestCase
             ->assertSet('societe', 'OpenCorp');
     }
 
+    public function test_sorting_toggles_and_orders(): void
+    {
+        $z = User::factory()->create(['nom' => 'Zoulou', 'prenom' => 'A']);
+        $z->client()->create(['societe' => 'Foo']);
+        $y = User::factory()->create(['nom' => 'Yankee', 'prenom' => 'B']);
+        $y->client()->create(['societe' => 'Bar']);
+
+        $component = Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Clients::class)
+            ->call('sortBy', 'nom')
+            ->assertSet('sortField', 'nom')
+            ->assertSet('sortDirection', 'asc')
+            ->assertSeeInOrder(['Yankee', 'Zoulou']); // nom croissant
+
+        $component->call('sortBy', 'nom')
+            ->assertSet('sortDirection', 'desc')
+            ->assertSeeInOrder(['Zoulou', 'Yankee']); // sens inverse
+    }
+
     public function test_search_filters_by_societe(): void
     {
         $a = User::factory()->create(['prenom' => 'A', 'nom' => 'Alpha']);

@@ -70,7 +70,8 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - Table `clients` : `id` (identité métier, future FK pour contrats/sites), `user_id` (unique, `cascadeOnDelete`), `societe?`, `lienapp?`, `email3?`, timestamps. Modèle `Client belongsTo User` ; `User hasOne client()`.
 - **Pattern = composition (extension 1‑1)**, PAS d'héritage : Eloquent n'a pas de STI natif → on garde l'auth sur `users` et les champs métier isolés dans `clients`. Étendre un client = ajouter une colonne à `clients` (ne pas polluer `users`).
 - Page `Admin\Clients` (route `admin.clients`) : CRUD complet (même UX que `Gestion\Admins` — tableau + slide-over + mot de passe généré). `save()` crée/MAJ le `User` puis `updateOrCreate` la ligne `clients`.
-- **`societe` obligatoire** (validation `required` ; colonne reste nullable en DB pour les anciennes lignes), **mise en avant** dans le tableau (chip + icône), **tri par défaut = société** (sous-requête `Client::select('societe')->whereColumn(...)`), puis nom.
+- **`societe` obligatoire** (validation `required` ; colonne reste nullable en DB pour les anciennes lignes), **mise en avant** dans le tableau (chip + icône).
+- **Colonnes triables** (clients + admins) via le trait `App\Livewire\Concerns\WithSorting` (`sortBy($field)` : clic = asc, re-clic = desc) + composant `<x-admin.sort-header>`. Tri par défaut clients = société (sous-requête `Client::select('societe')->whereColumn(...)`), admins = nom. Le composant traduit `$sortField` en `orderBy` (`match`), la société se trie via la sous-requête.
 - **Recherche libre** : champ `<x-text-input>` (composant maison, cohérence design) + icône loupe/croix, `#[Url(except:'')] $search` (nom/prénom/société, `wire:model.live.debounce.300ms`).
 - **Deep-link recherche globale** : `#[Url(except:null)] $open` (id client) → `mount()` ouvre directement le slide-over du client ciblé (si accessible) ; `closeForm()` remet `open=null`. Edit/delete/save sont gardés par `accessibleBy` (un restreint ne peut pas ouvrir un client non accordé).
 - **Filtrage par accès** : la liste utilise `User::where('type','client')->accessibleBy(auth()->user())` → un admin restreint ne voit que ses clients accordés (grants `grantable_type = User::class`).
@@ -108,6 +109,7 @@ livewire/admin/dashboard.blade.php  + profil + notepad + favorites + favorite-to
 livewire/client/dashboard.blade.php
 components/admin/page-header.blade.php  ← props: title, subtitle, icon (en-tête de page admin)
 components/admin/empty-state.blade.php  ← props: icon, title (état « en construction »)
+components/admin/sort-header.blade.php  ← <th> triable : props field, label, sort, direction (→ sortBy)
 components/text-input.blade.php     ← props: label, size, name, error (erreur intégrée)
 components/select.blade.php          ← jumeau de text-input pour les <select> (options en slot)
 components/primary-button.blade.php ← props: icon (lucide), text, size, full ; hover inversé
@@ -132,7 +134,7 @@ Topbar : `<livewire:admin.global-search>` (recherche universelle) + `<livewire:a
 - `App\Support\SystemMetrics` : lecture `/proc` Linux — **demo mode automatique sur Windows** (valeurs aléatoires + badge jaune), toujours conserver ce comportement
 
 ## Conventions & pièges connus
-- Formulaires admin/clients : champs via `<x-text-input>` / `<x-select>` (cohérence design). Login **auto-généré** `prénom.nom` (`Str::slug(... , '.')`) par le trait `App\Livewire\Concerns\GeneratesLogin` — création uniquement, toujours éditable, stoppé dès saisie manuelle (`loginManual`) ou en édition (`editingId`). Le composant hôte doit exposer `editingId/nom/prenom/login` ; mettre `nom`/`prenom`/`login` en `wire:model.blur`.
+- Formulaires admin/clients : champs via `<x-text-input>` / `<x-select>` (cohérence design) avec **label au-dessus** + prop **`floatError`** (message d'erreur en position absolue → ne décale pas la mise en page) ; grilles 2-col en `items-start`, body en `space-y-6`. Erreurs auto-détectées via `name`. (Le login garde l'erreur inline classique, `floatError` non passé.) Login **auto-généré** `prénomnom` (collé, sans accent ni séparateur — `preg_replace('/[^a-z0-9]/','', Str::ascii(...))`) par le trait `App\Livewire\Concerns\GeneratesLogin` — création uniquement, toujours éditable, stoppé dès saisie manuelle (`loginManual`) ou en édition (`editingId`). Le composant hôte doit exposer `editingId/nom/prenom/login` ; mettre `nom`/`prenom`/`login` en `wire:model.live.debounce` (pour que le login s'affiche pendant la saisie).
 - `wire:model` property et `wire:submit` method → noms différents obligatoires (ex. propriété `login` → méthode `login_request`)
 - Auth sur le champ `login` (pas l'email) : `Auth::attempt(['login' => ..., 'password' => ...])`
 - Protéger les routes par rôle avec `type:admin` / `type:client`

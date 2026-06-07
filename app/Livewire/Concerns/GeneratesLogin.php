@@ -5,9 +5,9 @@ namespace App\Livewire\Concerns;
 use Illuminate\Support\Str;
 
 /**
- * Génère automatiquement le login à partir du prénom + nom (ex. "jean.dupont")
- * tant qu'on crée un utilisateur (editingId === null) et que le login n'a pas
- * été modifié à la main. Toujours éditable ; aucune génération en édition.
+ * Génère automatiquement le login à partir du prénom + nom (ex. "jeandupont",
+ * collé, sans accent ni séparateur) tant qu'on crée un utilisateur (editingId === null)
+ * et que le login n'a pas été modifié à la main. Toujours éditable ; aucune génération en édition.
  *
  * Le composant hôte doit exposer : ?int $editingId, string $nom, string $prenom, string $login.
  */
@@ -42,6 +42,6 @@ trait GeneratesLogin
             return;
         }
 
-        $this->login = Str::slug($this->prenom.' '.$this->nom, '.');
+        $this->login = preg_replace('/[^a-z0-9]/', '', Str::lower(Str::ascii($this->prenom.$this->nom)));
     }
 }

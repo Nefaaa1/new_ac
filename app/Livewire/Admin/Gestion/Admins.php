@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Gestion;
 
 use App\Livewire\Concerns\GeneratesLogin;
+use App\Livewire\Concerns\WithSorting;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Str;
@@ -16,6 +17,7 @@ class Admins extends Component
 {
     use AuthorizesRequests;
     use GeneratesLogin;
+    use WithSorting;
 
     public bool $showForm = false;
     public ?int $editingId = null;
@@ -38,16 +40,24 @@ class Admins extends Component
     public function mount(): void
     {
         $this->authorize('manage-admins');
+        $this->sortField = $this->sortField ?: 'nom';
     }
 
     #[Computed]
     public function admins()
     {
-        return User::where('type', 'admin')
-            ->withCount('accessGrants')
-            ->orderBy('nom')
-            ->orderBy('prenom')
-            ->get();
+        $query = User::where('type', 'admin')->withCount('accessGrants');
+
+        $dir = $this->sortDir();
+
+        match ($this->sortField) {
+            'email' => $query->orderBy('email', $dir),
+            'access_level' => $query->orderBy('access_level', $dir),
+            'suspended_at' => $query->orderBy('suspended_at', $dir),
+            default => $query->orderBy('nom', $dir)->orderBy('prenom', $dir), // administrateur
+        };
+
+        return $query->get();
     }
 
     #[Computed]

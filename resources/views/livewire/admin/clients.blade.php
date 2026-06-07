@@ -47,9 +47,9 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-primary text-left text-xs font-semibold uppercase tracking-wider text-white">
-                    <th class="px-5 py-3.5">Société</th>
-                    <th class="px-5 py-3.5">Client</th>
-                    <th class="px-5 py-3.5">Email</th>
+                    <x-admin.sort-header field="societe" label="Société" :sort="$sortField" :direction="$sortDirection" />
+                    <x-admin.sort-header field="nom" label="Client" :sort="$sortField" :direction="$sortDirection" />
+                    <x-admin.sort-header field="email" label="Email" :sort="$sortField" :direction="$sortDirection" />
                     <th class="px-5 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
@@ -136,37 +136,37 @@
             </div>
 
             <form wire:submit="save" class="flex flex-1 flex-col overflow-hidden">
-                <div class="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-                    <x-select name="civilite" wire:model="civilite">
-                        <option value="">Civilité…</option>
+                <div class="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+                    <x-select label="Civilité" name="civilite" floatError wire:model="civilite">
+                        <option value="">Sélectionner…</option>
                         <option value="M">M.</option>
                         <option value="Mme">Mme</option>
                     </x-select>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <x-text-input placeholder="Prénom" name="prenom" wire:model.blur="prenom" />
-                        <x-text-input placeholder="Nom" name="nom" wire:model.blur="nom" />
+                    <div class="grid grid-cols-2 items-start gap-4">
+                        <x-text-input label="Prénom" name="prenom" floatError wire:model.live.debounce.300ms="prenom" />
+                        <x-text-input label="Nom" name="nom" floatError wire:model.live.debounce.300ms="nom" />
                     </div>
 
-                    <x-text-input placeholder="Identifiant (login)" name="login" wire:model.blur="login" />
+                    <x-text-input label="Identifiant (login)" name="login" placeholder="prenomnom" floatError wire:model.live.debounce.400ms="login" />
 
-                    <x-text-input placeholder="Email" name="email" type="email" wire:model="email" />
+                    <x-text-input label="Email" name="email" type="email" floatError wire:model="email" />
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <x-text-input placeholder="Email secondaire (optionnel)" name="email_secondaire" type="email" wire:model="email_secondaire" />
-                        <x-text-input placeholder="Téléphone (optionnel)" name="telephone" wire:model="telephone" />
+                    <div class="grid grid-cols-2 items-start gap-4">
+                        <x-text-input label="Email secondaire" name="email_secondaire" type="email" floatError wire:model="email_secondaire" />
+                        <x-text-input label="Téléphone" name="telephone" floatError wire:model="telephone" />
                     </div>
 
                     {{-- Fiche métier client (mise en avant) --}}
-                    <div class="space-y-4 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.07] to-secondary/[0.07] p-4">
+                    <div class="space-y-6 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.07] to-secondary/[0.07] p-5">
                         <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
                             <x-lucide-building-2 class="h-4 w-4" />
                             Fiche client
                         </p>
 
-                        <x-text-input placeholder="Société" name="societe" wire:model="societe" class="!bg-white" />
-                        <x-text-input placeholder="Lien app — https://… (optionnel)" name="lienapp" wire:model="lienapp" class="!bg-white" />
-                        <x-text-input placeholder="Email 3 (optionnel)" name="email3" type="email" wire:model="email3" class="!bg-white" />
+                        <x-text-input label="Société" name="societe" floatError wire:model="societe" class="!bg-white" />
+                        <x-text-input label="Lien app" name="lienapp" placeholder="https://…" floatError wire:model="lienapp" class="!bg-white" />
+                        <x-text-input label="Email 3" name="email3" type="email" floatError wire:model="email3" class="!bg-white" />
                     </div>
                 </div>
 

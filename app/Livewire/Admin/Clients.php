@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Livewire\Concerns\GeneratesLogin;
+use App\Livewire\Concerns\WithSorting;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -16,6 +17,7 @@ use Livewire\Component;
 class Clients extends Component
 {
     use GeneratesLogin;
+    use WithSorting;
 
     public bool $showForm = false;
     public ?int $editingId = null; // id du User (client)
@@ -30,6 +32,8 @@ class Clients extends Component
 
     public function mount(): void
     {
+        $this->sortField = $this->sortField ?: 'societe';
+
         // Ouvre directement le client ciblé par la recherche globale, s'il est accessible.
         if ($this->open && User::where('type', 'client')->accessibleBy(auth()->user())->whereKey($this->open)->exists()) {
             $this->editClient($this->open);
@@ -56,7 +60,7 @@ class Clients extends Component
     #[Computed]
     public function clients()
     {
-        return User::where('type', 'client')
+        $query = User::where('type', 'client')
             ->accessibleBy(auth()->user())
             ->with('client')
             ->when($this->search !== '', function ($query) {
@@ -66,11 +70,18 @@ class Clients extends Component
                         ->orWhere('prenom', 'like', $term)
                         ->orWhereHas('client', fn ($c) => $c->where('societe', 'like', $term));
                 });
-            })
-            // Tri par défaut : société (sous-requête sur la table d'extension), puis nom.
-            ->orderBy(Client::select('societe')->whereColumn('clients.user_id', 'users.id'))
-            ->orderBy('nom')
-            ->get();
+            });
+
+        $dir = $this->sortDir();
+        $societe = Client::select('societe')->whereColumn('clients.user_id', 'users.id');
+
+        match ($this->sortField) {
+            'nom' => $query->orderBy('nom', $dir)->orderBy('prenom', $dir),
+            'email' => $query->orderBy('email', $dir),
+            default => $query->orderBy($societe, $dir)->orderBy('nom'), // société
+        };
+
+        return $query->get();
     }
 
     public function create(): void

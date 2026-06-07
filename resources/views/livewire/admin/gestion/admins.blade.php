@@ -33,10 +33,10 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-primary text-left text-xs font-semibold uppercase tracking-wider text-white">
-                    <th class="px-5 py-3.5">Administrateur</th>
-                    <th class="px-5 py-3.5">Email</th>
-                    <th class="px-5 py-3.5">Accès</th>
-                    <th class="px-5 py-3.5">Statut</th>
+                    <x-admin.sort-header field="nom" label="Administrateur" :sort="$sortField" :direction="$sortDirection" />
+                    <x-admin.sort-header field="email" label="Email" :sort="$sortField" :direction="$sortDirection" />
+                    <x-admin.sort-header field="access_level" label="Accès" :sort="$sortField" :direction="$sortDirection" />
+                    <x-admin.sort-header field="suspended_at" label="Statut" :sort="$sortField" :direction="$sortDirection" />
                     <th class="px-5 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
@@ -144,30 +144,30 @@
                 </div>
 
                 <form wire:submit="save" class="flex flex-1 flex-col overflow-hidden">
-                    <div class="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-                    <x-select name="civilite" wire:model="civilite">
-                        <option value="">Civilité…</option>
+                    <div class="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+                    <x-select label="Civilité" name="civilite" floatError wire:model="civilite">
+                        <option value="">Sélectionner…</option>
                         <option value="M">M.</option>
                         <option value="Mme">Mme</option>
                     </x-select>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <x-text-input placeholder="Prénom" name="prenom" wire:model.blur="prenom" />
-                        <x-text-input placeholder="Nom" name="nom" wire:model.blur="nom" />
+                    <div class="grid grid-cols-2 items-start gap-4">
+                        <x-text-input label="Prénom" name="prenom" floatError wire:model.live.debounce.300ms="prenom" />
+                        <x-text-input label="Nom" name="nom" floatError wire:model.live.debounce.300ms="nom" />
                     </div>
 
-                    <x-text-input placeholder="Identifiant (login)" name="login" wire:model.blur="login" />
+                    <x-text-input label="Identifiant (login)" name="login" placeholder="prenomnom" floatError wire:model.live.debounce.400ms="login" />
 
-                    <x-text-input placeholder="Email" name="email" type="email" wire:model="email" />
+                    <x-text-input label="Email" name="email" type="email" floatError wire:model="email" />
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <x-text-input placeholder="Email secondaire (optionnel)" name="email_secondaire" type="email" wire:model="email_secondaire" />
-                        <x-text-input placeholder="Téléphone (optionnel)" name="telephone" wire:model="telephone" />
+                    <div class="grid grid-cols-2 items-start gap-4">
+                        <x-text-input label="Email secondaire" name="email_secondaire" type="email" floatError wire:model="email_secondaire" />
+                        <x-text-input label="Téléphone" name="telephone" floatError wire:model="telephone" />
                     </div>
 
                     {{-- Niveau d'accès --}}
                     <div>
-                        <label class="text-xs font-medium text-zinc-500">Niveau d'accès</label>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">Niveau d'accès</label>
                         <div class="mt-2 grid grid-cols-2 gap-3">
                             <label @class([
                                 'flex cursor-pointer items-start gap-2 rounded-lg border p-3 transition',
