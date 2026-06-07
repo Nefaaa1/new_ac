@@ -41,4 +41,16 @@ class Action extends Model
     {
         return self::TYPES[$this->type] ?? null;
     }
+
+    /** Temps de cette action formaté (ex. « 2,5 h »). */
+    public function tempsLabel(): string
+    {
+        return self::formatHeures((float) $this->temps);
+    }
+
+    /** Formate un nombre d'heures décimal en libellé court (ex. 2.50 → « 2,5 h »). */
+    public static function formatHeures(float $heures): string
+    {
+        return rtrim(rtrim(number_format($heures, 2, ',', ' '), '0'), ',').' h';
+    }
 }

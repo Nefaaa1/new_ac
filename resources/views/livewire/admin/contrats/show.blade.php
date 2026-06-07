@@ -56,6 +56,15 @@
                     <span class="rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-semibold text-secondary">{{ $contrat->reseaux->count() }}</span>
                 @endif
             </button>
+            <button type="button" @click="tab = 'actions'"
+                    :class="tab === 'actions' ? 'border-primary text-primary' : 'border-transparent text-zinc-500 hover:text-zinc-800'"
+                    class="flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-medium transition">
+                <x-lucide-zap class="h-4 w-4" />
+                Actions
+                @if($this->monthlyActions[0]['count'])
+                    <span class="rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-semibold text-secondary">{{ $this->monthlyActions[0]['count'] }}</span>
+                @endif
+            </button>
         </nav>
     </div>
 
@@ -199,5 +208,51 @@
                 </a>
             </div>
         @endforelse
+    </div>
+
+    {{-- Onglet Actions (mois en cours / mois précédent) --}}
+    <div x-show="tab === 'actions'" x-cloak class="mt-6 space-y-8">
+        @foreach($this->monthlyActions as $bucket)
+            <section>
+                <div class="flex items-center justify-between border-b border-zinc-100 pb-2">
+                    <div>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">{{ $bucket['title'] }}</h2>
+                        <p class="text-xs capitalize text-zinc-400">{{ $bucket['label'] }}</p>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-secondary/15 px-3 py-1 text-sm font-semibold text-secondary">
+                        <x-lucide-clock class="h-4 w-4" />
+                        {{ $bucket['totalLabel'] }}
+                    </span>
+                </div>
+
+                @if($bucket['actions']->isEmpty())
+                    <p class="mt-3 rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-400">
+                        Aucune action sur ce mois.
+                    </p>
+                @else
+                    <div class="mt-3 overflow-hidden rounded-xl border border-zinc-200">
+                        <table class="w-full text-sm">
+                            <tbody class="divide-y divide-zinc-100">
+                                @foreach($bucket['actions'] as $action)
+                                    <tr class="bg-white">
+                                        <td class="w-24 whitespace-nowrap px-4 py-2.5 text-zinc-500">{{ $action->date->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-2.5">
+                                            <p class="font-medium text-zinc-900">{{ $action->intitule }}</p>
+                                            @if($action->commentaire)
+                                                <p class="truncate text-xs text-zinc-400" title="{{ $action->commentaire }}">{{ $action->commentaire }}</p>
+                                            @endif
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-2.5">
+                                            <span class="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{{ $action->typeLabel() }}</span>
+                                        </td>
+                                        <td class="w-20 whitespace-nowrap px-4 py-2.5 text-right text-zinc-600">{{ $action->tempsLabel() }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </section>
+        @endforeach
     </div>
 </div>

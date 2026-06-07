@@ -67,7 +67,7 @@
                         <td class="px-5 py-3 whitespace-nowrap text-zinc-600">
                             <span class="inline-flex items-center gap-1.5">
                                 <x-lucide-clock class="h-3.5 w-3.5 text-secondary" />
-                                {{ rtrim(rtrim(number_format((float) $action->temps, 2, ',', ' '), '0'), ',') }} h
+                                {{ $action->tempsLabel() }}
                             </span>
                         </td>
                         <td class="px-5 py-3">

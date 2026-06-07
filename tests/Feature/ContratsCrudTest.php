@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Admin\Contrats;
 use App\Livewire\Admin\Contrats\Form;
 use App\Livewire\Admin\Contrats\Show;
+use App\Models\Action;
 use App\Models\Contrat;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,6 +123,20 @@ class ContratsCrudTest extends TestCase
         $this->assertDatabaseMissing('contrat_reseaux', ['contrat_id' => $contrat->id, 'reseau' => 'instagram']);
         $this->assertDatabaseHas('contrat_reseaux', ['contrat_id' => $contrat->id, 'reseau' => 'linkedin']);
         $this->assertSame(1, $contrat->reseaux()->count());
+    }
+
+    public function test_show_groups_actions_by_current_and_previous_month(): void
+    {
+        $contrat = Contrat::factory()->create();
+        Action::factory()->create(['contrat_id' => $contrat->id, 'intitule' => 'Action du mois', 'date' => now()->startOfMonth()->toDateString()]);
+        Action::factory()->create(['contrat_id' => $contrat->id, 'intitule' => 'Action mois dernier', 'date' => now()->subMonthNoOverflow()->startOfMonth()->toDateString()]);
+        Action::factory()->create(['contrat_id' => $contrat->id, 'intitule' => 'Action ancienne', 'date' => now()->subMonths(3)->toDateString()]);
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Show::class, ['contrat' => $contrat])
+            ->assertSee('Action du mois')
+            ->assertSee('Action mois dernier')
+            ->assertDontSee('Action ancienne');
     }
 
     public function test_it_deletes_a_contrat_from_the_show_page(): void
