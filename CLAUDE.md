@@ -102,6 +102,7 @@ components/primary-button.blade.php ← props: icon (lucide), text, size, full ;
 components/input-label / input-error / auth-session-status
 ```
 **Layout admin = app shell** : `body` en `h-screen overflow-hidden`, **sidebar + topbar figées**, seul le `<main>` scrolle (`flex-1 overflow-y-auto`). Ne pas remettre la topbar en `sticky` ni rendre le `body` scrollable.
+**`<title>` dynamique** : le layout admin le dérive de `Navigation::find(route courante)` → `"{label} · {app.name}"` (mis à jour aussi via `wire:navigate`) ; guest = « Connexion · … », panel = « Espace client · … ». Favicon `public/favicon.ico` lié dans les 3 layouts. `APP_NAME="Partner Web Communication"` (penser à l'aligner dans le `.env` du VPS).
 Sidebar admin (`layouts/admin.blade.php`) : boucle sur `App\Support\Navigation::groups()` —
 **Informations** (point `primary`), **Récap mensuel** (point `secondary`) et **Gestion** (point `rose`, clé `'can' => 'manage-admins'` → masqué aux admins restreints). Lien actif via `request()->routeIs()`.
 Logo blanc `public/images/Logo-website-blanc.png` → retour dashboard.
