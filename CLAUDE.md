@@ -29,7 +29,10 @@ GET  /dashboard     → auth     → redirige vers admin/client selon le type
 # Groupe admin (prefix admin, name admin.*, middleware auth + type:admin)
 GET /admin                  admin.dashboard   (Admin\Dashboard)
 GET /admin/sites            admin.sites       (Admin\Sites)
-GET /admin/contrats         admin.contrats    (Admin\Contrats)
+GET /admin/contrats             admin.contrats        (Admin\Contrats)         # liste
+GET /admin/contrats/create      admin.contrats.create (Admin\Contrats\Form)    # création (page pleine)
+GET /admin/contrats/{contrat}   admin.contrats.show   (Admin\Contrats\Show)    # fiche (page pleine)
+GET /admin/contrats/{contrat}/edit admin.contrats.edit (Admin\Contrats\Form)   # édition (même composant que create)
 GET /admin/clients          admin.clients     (Admin\Clients)
 GET /admin/actions          admin.actions     (Admin\Actions)
 GET /admin/tickets          admin.tickets     (Admin\Tickets)
@@ -60,8 +63,8 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
   - Création : mot de passe **généré, affiché une seule fois** (comme le seeder).
   - **Suspension** = colonne `users.suspended_at` (pas un softDelete) : login refusé (`Auth\Login`) + session active coupée (`not-suspended`).
 - **Niveaux d'accès** : `users.access_level` = `full` (voit tout) | `restricted` (limité aux grants).
-- **Accès granulaire par ressource** : table polymorphe `access_grants` (`user_id`, `grantable_type`, `grantable_id`, unique). Modèle `AccessGrant`. Aujourd'hui on accorde des **clients** (`grantable_type = User::class`) ; sites/contrats câblés, inertes jusqu'à leurs modèles.
-- **Application** : trait `App\Models\Concerns\RestrictsAccess` → scope `Model::accessibleBy($admin)` (renvoie tout si full, sinon filtre sur les grants). À poser sur les futurs `Site`/`Contrat`. `User::canAccess($resource)` pour un check unitaire.
+- **Accès granulaire par ressource** : table polymorphe `access_grants` (`user_id`, `grantable_type`, `grantable_id`, unique). Modèle `AccessGrant`. Aujourd'hui on accorde des **clients** (`grantable_type = User::class`) ; **sites** câblés, inertes jusqu'à leur modèle.
+- **Application** : trait `App\Models\Concerns\RestrictsAccess` → scope `Model::accessibleBy($admin)` (renvoie tout si full, sinon filtre sur les grants). Posé sur `User`(client) et `Contrat` ; à poser sur le futur `Site`. `User::canAccess($resource)` pour un check unitaire (utilisé par `Contrats\Form`/`Show` → `abort_unless(canAccess, 403)`). ⚠️ Pas encore d'UI pour accorder des contrats → un admin **restreint** ne voit aucun contrat tant que le grant `grantable_type = Contrat::class` n'est pas posé (full = voit tout).
 - **Garde-fous** : Gate `manage-admins` (full only) sur la route gestion + sidebar (clé `'can'` du groupe Navigation) ; impossible de se suspendre/supprimer soi-même ; super-admin (`antoinepw`) protégé (ni suspension, ni rétrogradation).
 - **Formulaire = slide-over** (panneau glissant depuis la droite) : toujours dans le DOM, visibilité pilotée par `x-data="{ open: @entangle('showForm') }"` + `x-transition` translate (pour animer entrée/sortie — ne PAS revenir à un `@if` qui casserait l'animation). Structure interne : en-tête figé / corps `flex-1 overflow-y-auto` / pied figé.
 
@@ -76,6 +79,16 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - **Deep-link recherche globale** : `#[Url(except:null)] $open` (id client) → `mount()` ouvre directement le slide-over du client ciblé (si accessible) ; `closeForm()` remet `open=null`. Edit/delete/save sont gardés par `accessibleBy` (un restreint ne peut pas ouvrir un client non accordé).
 - **Filtrage par accès** : la liste utilise `User::where('type','client')->accessibleBy(auth()->user())` → un admin restreint ne voit que ses clients accordés (grants `grantable_type = User::class`).
 - **Tableaux admin (clients + gestion)** : en-tête `bg-primary text-white`, lignes zébrées `odd:bg-white even:bg-primary/[0.04]` + survol `hover:bg-secondary/10`, avatars en dégradé primary→secondary, icône `mail` secondary devant l'email.
+
+## Contrats (CRUD)
+- **Vraie page par contrat** (PAS de slide-over comme clients) : 3 composants full-page (`#[Layout admin]`) — `Admin\Contrats` (liste), `Admin\Contrats\Form` (création **et** édition), `Admin\Contrats\Show` (fiche lecture seule). Routes sous `prefix('contrats')->name('contrats.')` : `create` / `{contrat}` (show) / `{contrat}/edit` — **`create` déclaré AVANT `{contrat}`** (sinon "create" capté comme id).
+- Table `contrats` : `id`, `libelle` (requis), `client_id?` (FK `clients.id`, `nullOnDelete` — contrat possible sans client), `site_web?`, `type?`, `date_debut?`, `date_fin?`, `taux_horaire?` (decimal 10,2), `cycle_facturation?`, `credits?` (uint, **1 crédit = 1h**), timestamps, `softDeletes`. Modèle `Contrat` : traits `HasFactory + RestrictsAccess + SoftDeletes`, casts dates + `decimal:2`, relations `client() belongsTo` / `reseaux() hasMany (orderBy position)`. Enums = **constantes de classe** `Contrat::TYPES` (horaire | horaire_sup | fixe | sup_temps_reel) et `Contrat::CYCLES` (mensuel | trimestriel | annuel), helpers `typeLabel()`/`cycleLabel()`.
+- **Réseaux sociaux n‑aire** : table `contrat_reseaux` (`contrat_id` cascade, `reseau`, `identifiant?`, `mot_de_passe?`, `gestion?`, `position`). Modèle `ContratReseau` : **`mot_de_passe` cast `encrypted`** (chiffré au repos), `protected $table` explicite (pluriel irrégulier), constantes `RESEAUX` (facebook/instagram/x/linkedin/brevo/tiktok/pinterest/youtube → `[label, icon]` lucide brand) et `GESTION` (client | agence, **facultatif**), helpers `reseauLabel()`/`reseauIcon()`/`gestionLabel()`.
+- **Form** : onglets (Alpine `x-show="$wire.activeTab===…"`, source de vérité = prop Livewire `activeTab` pour rester synchro avec `addReseau()`) — **Général** (champs contrat) + **Réseaux sociaux** (lignes répétables `public array $reseaux`, `addReseau()`/`removeReseau($i)` + `wire:key`). Mots de passe : input `:type="show?'text':'password'"` + œil Alpine. `save()` upsert le contrat puis `syncReseaux()` (updateOrCreate par `id`, supprime les `whereNotIn($keep)`), puis `redirectRoute('admin.contrats.show', navigate:true)`. Garde `abort_unless(canAccess, 403)` en édition.
+- **Show** : onglets Alpine pur (`x-data="{ tab }"`, lecture seule, pas de prop serveur), `<dl>` grille pour le Général + cartes réseaux (mot de passe masqué `••••` + œil reveal). Boutons Modifier / Supprimer (`deleteContrat()` → redirect liste).
+- **Liste** : tableau coloré + `WithSorting` (tri défaut `date_debut desc`) + recherche libre `#[Url(except:'')] $search` (libellé / site / société / nom-prénom client). Rattachement client affiché en chip société.
+- **Recherche globale** : `ContratSource` **actif** (libellé / site / société, `accessibleBy`, deep-link `admin.contrats.show`).
+- Sidebar : sous-pages contrats gardent **Contrats** actif via `routeIs($route.'.*')` (ajouté au layout) ; `<title>` retombe sur la rubrique parente (`Str::beforeLast(name,'.')`) si la sous-route n'est pas dans `Navigation`.
 
 ## Dashboard admin — note & favoris
 - **Note pense-bête** : table `notes` (`user_id` unique, `content`) → `User hasOne`. Composant `Admin\Notepad`
@@ -94,7 +107,7 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - **Pattern « providers » calqué sur `Navigation`** dans `app/Support/Search/` :
   - `SearchSource` (interface `search(string): SearchResult[]`), `SearchResult` (DTO readonly : group/label/sublabel/icon/url/score).
   - `Search` = registre : `query()` interroge toutes les `sources()`, trie par `score` desc, plafonne à `LIMIT` (15), regroupe. `MIN_CHARS=2`.
-  - `Search/Sources/ClientSource` : **actif** (cherche nom/prénom/société, filtré par `accessibleBy`, deep-link `route('admin.clients', ['search' => nom, 'open' => id])` → ouvre la fiche). `Site`/`Contrat`Source : **stubs `[]`** jusqu'à leurs modèles. Activer une entité = remplir son source, rien d'autre à toucher.
+  - `Search/Sources/ClientSource` + `ContratSource` : **actifs** (filtrés par `accessibleBy`, deep-link vers la fiche). `SiteSource` : **stub `[]`** jusqu'à son modèle. Activer une entité = remplir son source, rien d'autre à toucher.
   - Ajouter une entité recherchable → nouvelle classe `SearchSource` + l'enregistrer dans `Search::sources()`.
 
 ## Structure views
@@ -105,6 +118,7 @@ layouts/panel.blade.php            ← dashboard client (thème zinc-950)
 livewire/auth/login.blade.php
 livewire/admin/dashboard.blade.php  + profil + notepad + favorites + favorite-toggle + global-search
    + une vue par page (sites, contrats, clients, actions, tickets, chatbots, status)
+   livewire/admin/contrats/{form,show}.blade.php (fiche contrat pleine page + onglets)
    et livewire/admin/recap/{actions,tickets}.blade.php + admin/gestion/admins.blade.php
 livewire/client/dashboard.blade.php
 components/admin/page-header.blade.php  ← props: title, subtitle, icon (en-tête de page admin)
@@ -126,7 +140,7 @@ Topbar : `<livewire:admin.global-search>` (recherche universelle) + `<livewire:a
 - `Auth\Login` (#[Layout guest])
 - `Admin\*` (#[Layout admin], full-page) : `Dashboard`, `Sites`, `Contrats`, `Actions`, `Tickets`,
   `Chatbots`, `Status`, `Profil`, `Recap\Actions`, `Recap\Tickets` — pages simples = en-tête + empty-state ;
-  `Clients` = CRUD clients (cf. section Clients) ; `Gestion\Admins` = CRUD admins + suspension + accès (cf. section dédiée)
+  `Clients` = CRUD clients (cf. section Clients) ; `Contrats` (liste) + `Contrats\Form` + `Contrats\Show` = CRUD contrats pleine page (cf. section Contrats) ; `Gestion\Admins` = CRUD admins + suspension + accès (cf. section dédiée)
 - `Admin\*` (imbriqués, sans #[Layout]) : `Notepad` (note auto-save), `Favorites` (liste dashboard),
   `FavoriteToggle` (étoile topbar), `GlobalSearch` (recherche universelle topbar → `App\Support\Search`)
 - `Client\Dashboard` (#[Layout panel])

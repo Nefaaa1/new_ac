@@ -30,6 +30,11 @@ Route::middleware(['auth', 'not-suspended', 'type:admin'])->prefix('admin')->nam
     Route::get('/', Admin\Dashboard::class)->name('dashboard');
     Route::get('/sites', Admin\Sites::class)->name('sites');
     Route::get('/contrats', Admin\Contrats::class)->name('contrats');
+    Route::prefix('contrats')->name('contrats.')->group(function () {
+        Route::get('/create', Admin\Contrats\Form::class)->name('create');
+        Route::get('/{contrat}', Admin\Contrats\Show::class)->name('show');
+        Route::get('/{contrat}/edit', Admin\Contrats\Form::class)->name('edit');
+    });
     Route::get('/clients', Admin\Clients::class)->name('clients');
     Route::get('/actions', Admin\Actions::class)->name('actions');
     Route::get('/tickets', Admin\Tickets::class)->name('tickets');

@@ -7,7 +7,14 @@
 
         <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
 
-        @php $page = \App\Support\Navigation::find(request()->route()?->getName()); @endphp
+        @php
+            $routeName = request()->route()?->getName();
+            $page = \App\Support\Navigation::find($routeName);
+            // Sous-page (ex. admin.contrats.edit) → on retombe sur la rubrique parente.
+            if (! $page && $routeName && str_contains($routeName, '.')) {
+                $page = \App\Support\Navigation::find(\Illuminate\Support\Str::beforeLast($routeName, '.'));
+            }
+        @endphp
         <title>{{ $page ? $page['label'].' · '.config('app.name') : config('app.name') }}</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -48,7 +55,7 @@
                             </p>
                             <div class="space-y-1">
                                 @foreach ($group['items'] as $item)
-                                    @php $active = request()->routeIs($item['route']); @endphp
+                                    @php $active = request()->routeIs($item['route']) || request()->routeIs($item['route'].'.*'); @endphp
                                     <a href="{{ route($item['route']) }}" wire:navigate
                                        @class([
                                            'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition',
