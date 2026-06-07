@@ -198,7 +198,10 @@
                     @if($accessLevel === 'restricted')
                         <div class="space-y-4 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500">Clients accessibles</p>
+                                <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                    <x-lucide-users class="h-3.5 w-3.5 text-primary" />
+                                    Clients accessibles
+                                </p>
                                 @if($this->clients->isEmpty())
                                     <p class="mt-2 text-xs text-zinc-400">Aucun client pour le moment.</p>
                                 @else
@@ -214,9 +217,33 @@
                             </div>
 
                             <div class="border-t border-zinc-200 pt-3">
+                                <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                    <x-lucide-file-text class="h-3.5 w-3.5 text-primary" />
+                                    Contrats accessibles
+                                </p>
+                                @if($this->contrats->isEmpty())
+                                    <p class="mt-2 text-xs text-zinc-400">Aucun contrat pour le moment.</p>
+                                @else
+                                    <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1">
+                                        @foreach($this->contrats as $contrat)
+                                            <label class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-700 hover:bg-white">
+                                                <input type="checkbox" wire:model="grantedContratIds" value="{{ $contrat->id }}" class="rounded text-primary focus:ring-0">
+                                                <span class="min-w-0">
+                                                    <span class="block truncate">{{ $contrat->libelle }}</span>
+                                                    @if($contrat->client)
+                                                        <span class="block truncate text-xs text-zinc-400">{{ $contrat->client->societe ?: $contrat->client->user?->name }}</span>
+                                                    @endif
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="border-t border-zinc-200 pt-3">
                                 <p class="text-xs text-zinc-400">
                                     <x-lucide-info class="mr-1 inline h-3.5 w-3.5 align-text-bottom" />
-                                    Sites et contrats : disponibles dès la création de ces modules.
+                                    Sites : disponibles dès la création de ce module.
                                 </p>
                             </div>
                         </div>

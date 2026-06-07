@@ -87,6 +87,45 @@ class GestionAdminsTest extends TestCase
         $this->assertTrue($admin->canAccess($client));
     }
 
+    public function test_restricted_admin_gets_contrat_grants(): void
+    {
+        $contrat = \App\Models\Contrat::factory()->create();
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Admins::class)
+            ->call('create')
+            ->set('civilite', 'M')
+            ->set('prenom', 'Paul')
+            ->set('nom', 'Leroy')
+            ->set('login', 'pleroy')
+            ->set('email', 'paul@leroy.fr')
+            ->set('accessLevel', 'restricted')
+            ->set('grantedContratIds', [$contrat->id])
+            ->call('save');
+
+        $admin = User::where('login', 'pleroy')->firstOrFail();
+
+        $this->assertDatabaseHas('access_grants', [
+            'user_id' => $admin->id,
+            'grantable_type' => \App\Models\Contrat::class,
+            'grantable_id' => $contrat->id,
+        ]);
+        $this->assertTrue($admin->canAccess($contrat));
+        $this->assertTrue($contrat->is(\App\Models\Contrat::accessibleBy($admin)->first()));
+    }
+
+    public function test_contrat_grants_are_loaded_when_editing(): void
+    {
+        $contrat = \App\Models\Contrat::factory()->create();
+        $admin = User::factory()->restricted()->create();
+        $admin->accessGrants()->create(['grantable_type' => \App\Models\Contrat::class, 'grantable_id' => $contrat->id]);
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(Admins::class)
+            ->call('editAdmin', $admin->id)
+            ->assertSet('grantedContratIds', [$contrat->id]);
+    }
+
     public function test_switching_to_full_access_clears_grants(): void
     {
         $client = User::factory()->create();

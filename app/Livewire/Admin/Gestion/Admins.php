@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Gestion;
 
 use App\Livewire\Concerns\GeneratesLogin;
 use App\Livewire\Concerns\WithSorting;
+use App\Models\Contrat;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Str;
@@ -33,6 +34,9 @@ class Admins extends Component
 
     /** @var array<int, int> ids des clients accordés (accès granulaire) */
     public array $grantedClientIds = [];
+
+    /** @var array<int, int> ids des contrats accordés (accès granulaire) */
+    public array $grantedContratIds = [];
 
     /** Mot de passe généré, affiché une seule fois après création. */
     public ?string $generatedPassword = null;
@@ -69,11 +73,20 @@ class Admins extends Component
             ->get();
     }
 
+    #[Computed]
+    public function contrats()
+    {
+        return Contrat::with('client.user')
+            ->orderBy('libelle')
+            ->get();
+    }
+
     public function create(): void
     {
         $this->reset(['editingId', 'civilite', 'nom', 'prenom', 'login', 'email', 'email_secondaire', 'telephone', 'generatedPassword', 'loginManual']);
         $this->accessLevel = 'restricted';
         $this->grantedClientIds = [];
+        $this->grantedContratIds = [];
         $this->resetValidation();
         $this->showForm = true;
     }
@@ -96,6 +109,10 @@ class Admins extends Component
             ->where('grantable_type', User::class)
             ->pluck('grantable_id')
             ->all();
+        $this->grantedContratIds = $admin->accessGrants()
+            ->where('grantable_type', Contrat::class)
+            ->pluck('grantable_id')
+            ->all();
         $this->generatedPassword = null;
         $this->resetValidation();
         $this->showForm = true;
@@ -116,6 +133,8 @@ class Admins extends Component
             'accessLevel' => 'required|in:full,restricted',
             'grantedClientIds' => 'array',
             'grantedClientIds.*' => 'integer|exists:users,id',
+            'grantedContratIds' => 'array',
+            'grantedContratIds.*' => 'integer|exists:contrats,id',
         ]);
 
         $attributes = [
@@ -154,7 +173,7 @@ class Admins extends Component
     }
 
     /**
-     * Synchronise les accès granulaires (clients pour l'instant).
+     * Synchronise les accès granulaires (clients + contrats).
      */
     protected function syncGrants(User $admin): void
     {
@@ -164,12 +183,23 @@ class Admins extends Component
             return;
         }
 
-        $admin->accessGrants()->where('grantable_type', User::class)->delete();
+        $this->syncGrantsFor($admin, User::class, $this->grantedClientIds);
+        $this->syncGrantsFor($admin, Contrat::class, $this->grantedContratIds);
+    }
 
-        foreach ($this->grantedClientIds as $clientId) {
+    /**
+     * Remplace les grants d'un type de ressource donné par la sélection courante.
+     *
+     * @param  array<int, int>  $ids
+     */
+    protected function syncGrantsFor(User $admin, string $type, array $ids): void
+    {
+        $admin->accessGrants()->where('grantable_type', $type)->delete();
+
+        foreach (array_unique($ids) as $id) {
             $admin->accessGrants()->create([
-                'grantable_type' => User::class,
-                'grantable_id' => $clientId,
+                'grantable_type' => $type,
+                'grantable_id' => $id,
             ]);
         }
     }
