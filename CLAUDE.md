@@ -89,6 +89,18 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - **Liste** : tableau coloré + `WithSorting` (tri défaut `date_debut desc`) + recherche libre `#[Url(except:'')] $search` (libellé / site / société / nom-prénom client). Rattachement client affiché en chip société.
 - **Recherche globale** : `ContratSource` **actif** (libellé / site / société, `accessibleBy`, deep-link `admin.contrats.show`).
 - Sidebar : sous-pages contrats gardent **Contrats** actif via `routeIs($route.'.*')` (ajouté au layout) ; `<title>` retombe sur la rubrique parente (`Str::beforeLast(name,'.')`) si la sous-route n'est pas dans `Navigation`.
+- **Pré-remplissage libellé** : `Contrats\Form` (création) lit `request()->query('libelle')` → permet d'arriver depuis l'autocomplétion d'action avec le libellé saisi déjà rempli.
+
+## Actions (CRUD)
+- `Admin\Actions` (route `admin.actions`) : CRUD en **slide-over** (même UX que clients/admins) — table colorée + `WithSorting` (défaut `date desc`) + recherche libre `#[Url(except:'')] $search` (intitulé / commentaire / libellé contrat) + soft delete.
+- Table `actions` : `id`, `intitule` (requis), `temps` (decimal 6,2, **heures** ex. 1.50 = 1h30, requis), `date` (requis), `type` (requis), `contrat_id` (FK `contrats` cascade, **requis**), `commentaire?`, timestamps, `softDeletes`. Modèle `Action` : `HasFactory + SoftDeletes`, casts `date`/`decimal:2`, `contrat() belongsTo`, const `TYPES` (site_web | reseaux_sociaux | redaction | graphisme | intranet) + `typeLabel()`. **Pas de `RestrictsAccess` direct** : l'accès est dérivé du contrat → la liste/edit/delete filtrent par `whereHas('contrat', accessibleBy(...))` (un admin restreint ne voit que les actions de ses contrats accordés). `save()` revérifie `Contrat::accessibleBy(...)->findOrFail()`.
+- Formulaire : `<x-date-input>` (date), `<x-text-input type=number step=0.25>` (temps), `<x-select>` (type), **`<livewire:admin.contrat-picker>`** (contrat, cf. ci-dessous), `<textarea>` (commentaire). Le picker est keyé `:key="'contrat-picker-'.$formNonce"` (`$formNonce++` à chaque `create()`/`editAction()`) pour **remonter proprement** à chaque ouverture (sinon il garderait l'état précédent — le slide-over reste dans le DOM).
+
+## Autocomplétion contrat — `Admin\ContratPicker` (réutilisable)
+- Composant Livewire **nested** branché par `wire:model` grâce à `#[Modelable] public ?int $contratId`. Usage : `<livewire:admin.contrat-picker wire:model="contrat_id" label="Contrat" :key="…" />`.
+- Champ texte (autocomplete off) → `results()` (computed, `accessibleBy`, libellé `like`, min 2 car., limite 8) affichées dans un dropdown. `selectContrat($id)` fixe `contratId` + remplit le libellé ; **toute frappe (`updatedSearch`) ré-annule la sélection** (`contratId=null`) jusqu'à un nouveau choix → la validation `required` du parent reste fiable.
+- **Création à la volée** : bouton « Créer le contrat « … » » → `createContrat()` = `redirectRoute('admin.contrats.create', ['libelle'=>$search], navigate:true)` (le libellé saisi pré-remplit le form contrat). ⚠️ redirige donc hors du formulaire en cours (comportement demandé).
+- Erreur de validation : portée par le **parent** (`@error('contrat_id')` après la balise `<livewire:…>`), pas par le picker. Dropdown : Alpine `@entangle('showResults')` + `@click.outside`.
 
 ## Dashboard admin — note & favoris
 - **Note pense-bête** : table `notes` (`user_id` unique, `content`) → `User hasOne`. Composant `Admin\Notepad`
@@ -116,7 +128,7 @@ layouts/guest.blade.php            ← login (carte blanche centrée)
 layouts/admin.blade.php            ← espace admin : sidebar noire (zinc-950) + topbar (fond clair)
 layouts/panel.blade.php            ← dashboard client (thème zinc-950)
 livewire/auth/login.blade.php
-livewire/admin/dashboard.blade.php  + profil + notepad + favorites + favorite-toggle + global-search
+livewire/admin/dashboard.blade.php  + profil + notepad + favorites + favorite-toggle + global-search + contrat-picker
    + une vue par page (sites, contrats, clients, actions, tickets, chatbots, status)
    livewire/admin/contrats/{form,show}.blade.php (fiche contrat pleine page + onglets)
    et livewire/admin/recap/{actions,tickets}.blade.php + admin/gestion/admins.blade.php
@@ -141,9 +153,10 @@ Topbar : `<livewire:admin.global-search>` (recherche universelle) + `<livewire:a
 - `Auth\Login` (#[Layout guest])
 - `Admin\*` (#[Layout admin], full-page) : `Dashboard`, `Sites`, `Contrats`, `Actions`, `Tickets`,
   `Chatbots`, `Status`, `Profil`, `Recap\Actions`, `Recap\Tickets` — pages simples = en-tête + empty-state ;
-  `Clients` = CRUD clients (cf. section Clients) ; `Contrats` (liste) + `Contrats\Form` + `Contrats\Show` = CRUD contrats pleine page (cf. section Contrats) ; `Gestion\Admins` = CRUD admins + suspension + accès (cf. section dédiée)
+  `Clients` = CRUD clients (cf. section Clients) ; `Contrats` (liste) + `Contrats\Form` + `Contrats\Show` = CRUD contrats pleine page (cf. section Contrats) ; `Actions` = CRUD actions en slide-over (cf. section Actions) ; `Gestion\Admins` = CRUD admins + suspension + accès (cf. section dédiée)
 - `Admin\*` (imbriqués, sans #[Layout]) : `Notepad` (note auto-save), `Favorites` (liste dashboard),
-  `FavoriteToggle` (étoile topbar), `GlobalSearch` (recherche universelle topbar → `App\Support\Search`)
+  `FavoriteToggle` (étoile topbar), `GlobalSearch` (recherche universelle topbar → `App\Support\Search`),
+  `ContratPicker` (autocomplétion contrat `#[Modelable]`, cf. section dédiée)
 - `Client\Dashboard` (#[Layout panel])
 - À venir : `Server` (reloadNginx), `Logs` (polling + pause), `Monitor` (CPU/RAM/disk)
 - `App\Support\SystemMetrics` : lecture `/proc` Linux — **demo mode automatique sur Windows** (valeurs aléatoires + badge jaune), toujours conserver ce comportement

@@ -60,7 +60,12 @@ class Form extends Component
                 'mot_de_passe' => $r->mot_de_passe ?? '',
                 'gestion' => $r->gestion ?? '',
             ])->all();
+
+            return;
         }
+
+        // Création : libellé pré-rempli (ex. depuis l'autocomplétion d'une action).
+        $this->libelle = trim((string) request()->query('libelle'));
     }
 
     /** Clients disponibles pour le rattachement (filtrés par accès). */
