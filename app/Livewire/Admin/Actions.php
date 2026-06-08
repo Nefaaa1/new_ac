@@ -5,6 +5,8 @@ namespace App\Livewire\Admin;
 use App\Livewire\Concerns\WithSorting;
 use App\Models\Action;
 use App\Models\Contrat;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -26,6 +28,14 @@ class Actions extends Component
     #[Url(except: '')]
     public string $search = '';
 
+    /** Filtre mois : 'all' (tous) | 1..12. Défaut = mois en cours (posé au mount). */
+    #[Url(except: '')]
+    public string $month = '';
+
+    /** Filtre année : 'all' (toutes) | AAAA. Défaut = année en cours (posée au mount). */
+    #[Url(except: '')]
+    public string $year = '';
+
     // Champs du formulaire
     public string $intitule = '';
     public string $temps = '';
@@ -41,6 +51,43 @@ class Actions extends Component
     {
         $this->sortField = $this->sortField ?: 'date';
         $this->sortDirection = $this->sortDirection ?: 'desc';
+
+        // Défaut à l'arrivée : mois et année en cours (sauf si déjà fixés via l'URL).
+        $this->month = $this->month !== '' ? $this->month : (string) now()->month;
+        $this->year = $this->year !== '' ? $this->year : (string) now()->year;
+    }
+
+    /** Libellés des mois (FR) pour le filtre. */
+    #[Computed]
+    public function monthsList(): array
+    {
+        return collect(range(1, 12))->mapWithKeys(fn ($m) => [
+            $m => Str::ucfirst(Carbon::create(null, $m, 1)->locale('fr')->isoFormat('MMMM')),
+        ])->all();
+    }
+
+    /** Années présentes dans les actions accessibles (+ année courante / sélectionnée). */
+    #[Computed]
+    public function yearsList(): array
+    {
+        $years = Action::query()
+            ->whereHas('contrat', fn ($q) => $q->withTrashed()->accessibleBy(auth()->user()))
+            ->selectRaw('DISTINCT YEAR(date) as y')
+            ->pluck('y')
+            ->filter()
+            ->map(fn ($y) => (int) $y)
+            ->all();
+
+        $years[] = (int) now()->year;
+
+        if ($this->year !== '' && $this->year !== 'all') {
+            $years[] = (int) $this->year;
+        }
+
+        $years = array_values(array_unique($years));
+        rsort($years);
+
+        return $years;
     }
 
     #[Computed]
@@ -58,7 +105,9 @@ class Actions extends Component
                         ->orWhere('commentaire', 'like', $term)
                         ->orWhereHas('contrat', fn ($c) => $c->withTrashed()->where('libelle', 'like', $term));
                 });
-            });
+            })
+            ->when($this->month !== '' && $this->month !== 'all', fn ($q) => $q->whereMonth('date', (int) $this->month))
+            ->when($this->year !== '' && $this->year !== 'all', fn ($q) => $q->whereYear('date', (int) $this->year));
 
         $dir = $this->sortDir();
 

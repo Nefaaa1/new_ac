@@ -1,24 +1,45 @@
 <div>
     <x-admin.page-header title="Sites" subtitle="Sites web gérés (hébergement, FTP, base de données, WordPress)." icon="globe" />
 
-    {{-- Barre d'outils : recherche + action --}}
-    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="relative w-full sm:max-w-xs">
-            <x-lucide-search class="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary" />
-            <x-text-input
-                wire:model.live.debounce.300ms="search"
-                placeholder="Rechercher un site, une société…"
-                class="!pl-11 !pr-11" />
-            @if($search !== '')
-                <button wire:click="$set('search', '')" type="button" title="Effacer"
-                        class="absolute right-3.5 top-1/2 z-10 -translate-y-1/2 text-zinc-400 transition hover:text-zinc-600">
-                    <x-lucide-x class="h-4 w-4" />
-                </button>
-            @endif
+    {{-- Barre d'outils : recherche + filtres + action --}}
+    <div class="mt-6 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="relative w-full sm:max-w-xs">
+                <x-lucide-search class="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary" />
+                <x-text-input
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Rechercher un site, une société…"
+                    class="!pl-11 !pr-11" />
+                @if($search !== '')
+                    <button wire:click="$set('search', '')" type="button" title="Effacer"
+                            class="absolute right-3.5 top-1/2 z-10 -translate-y-1/2 text-zinc-400 transition hover:text-zinc-600">
+                        <x-lucide-x class="h-4 w-4" />
+                    </button>
+                @endif
+            </div>
+
+            {{-- Filtre statut --}}
+            <div class="w-full sm:w-48">
+                <x-select wire:model.live="statutFilter">
+                    <option value="">Tous les statuts</option>
+                    @foreach($this->statutsList as $statut)
+                        <option value="{{ $statut->id }}">{{ $statut->libelle }}</option>
+                    @endforeach
+                </x-select>
+            </div>
+
+            {{-- Filtre paiement --}}
+            <div class="w-full sm:w-44">
+                <x-select wire:model.live="paiementFilter">
+                    <option value="">Tous les paiements</option>
+                    <option value="agence">Paiement agence</option>
+                    <option value="direct">Paiement direct</option>
+                </x-select>
+            </div>
         </div>
 
         <a href="{{ route('admin.sites.create') }}" wire:navigate
-           class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90">
+           class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90">
             <x-lucide-plus class="h-4 w-4" />
             Nouveau site
         </a>
@@ -114,7 +135,7 @@
                 @empty
                     <tr>
                         <td colspan="7" class="px-5 py-12 text-center text-sm text-zinc-400">
-                            {{ $search !== '' ? 'Aucun site ne correspond à « '.$search.' ».' : 'Aucun site pour le moment.' }}
+                            {{ ($search !== '' || $statutFilter !== '' || $paiementFilter !== '') ? 'Aucun site ne correspond à votre recherche.' : 'Aucun site pour le moment.' }}
                         </td>
                     </tr>
                 @endforelse

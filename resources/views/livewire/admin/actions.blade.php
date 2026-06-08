@@ -1,24 +1,46 @@
 <div>
     <x-admin.page-header title="Actions" subtitle="Suivi des actions réalisées par contrat." icon="zap" />
 
-    {{-- Barre d'outils : recherche + action --}}
-    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="relative w-full sm:max-w-xs">
-            <x-lucide-search class="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary" />
-            <x-text-input
-                wire:model.live.debounce.300ms="search"
-                placeholder="Rechercher intitulé, contrat…"
-                class="!pl-11 !pr-11" />
-            @if($search !== '')
-                <button wire:click="$set('search', '')" type="button" title="Effacer"
-                        class="absolute right-3.5 top-1/2 z-10 -translate-y-1/2 text-zinc-400 transition hover:text-zinc-600">
-                    <x-lucide-x class="h-4 w-4" />
-                </button>
-            @endif
+    {{-- Barre d'outils : recherche + filtres mois/année + action --}}
+    <div class="mt-6 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="relative w-full sm:max-w-xs">
+                <x-lucide-search class="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary" />
+                <x-text-input
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Rechercher intitulé, contrat…"
+                    class="!pl-11 !pr-11" />
+                @if($search !== '')
+                    <button wire:click="$set('search', '')" type="button" title="Effacer"
+                            class="absolute right-3.5 top-1/2 z-10 -translate-y-1/2 text-zinc-400 transition hover:text-zinc-600">
+                        <x-lucide-x class="h-4 w-4" />
+                    </button>
+                @endif
+            </div>
+
+            {{-- Filtre mois --}}
+            <div class="w-full sm:w-40">
+                <x-select wire:model.live="month">
+                    <option value="all">Tous les mois</option>
+                    @foreach($this->monthsList as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </x-select>
+            </div>
+
+            {{-- Filtre année --}}
+            <div class="w-full sm:w-32">
+                <x-select wire:model.live="year">
+                    <option value="all">Toutes</option>
+                    @foreach($this->yearsList as $value)
+                        <option value="{{ $value }}">{{ $value }}</option>
+                    @endforeach
+                </x-select>
+            </div>
         </div>
 
         <button wire:click="create" type="button"
-                class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90">
+                class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90">
             <x-lucide-plus class="h-4 w-4" />
             Nouvelle action
         </button>
@@ -98,7 +120,7 @@
                 @empty
                     <tr>
                         <td colspan="6" class="px-5 py-12 text-center text-sm text-zinc-400">
-                            {{ $search !== '' ? 'Aucune action ne correspond à « '.$search.' ».' : 'Aucune action pour le moment.' }}
+                            {{ $search !== '' ? 'Aucune action ne correspond à « '.$search.' ».' : 'Aucune action pour cette période.' }}
                         </td>
                     </tr>
                 @endforelse
