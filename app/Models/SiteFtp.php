@@ -24,4 +24,10 @@ class SiteFtp extends Model
     {
         return $this->belongsTo(Site::class);
     }
+
+    /** L'onglet contient-il au moins un identifiant renseigné ? (pour la liste des sites) */
+    public function hasData(): bool
+    {
+        return filled($this->hote) || filled($this->identifiant) || filled($this->getRawOriginal('mot_de_passe'));
+    }
 }

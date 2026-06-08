@@ -28,7 +28,7 @@ class Sites extends Component
     {
         $query = Site::query()
             ->accessibleBy(auth()->user())
-            ->with(['client.user', 'statut'])
+            ->with(['client.user', 'statut', 'hebergement', 'ftp', 'bdd', 'wordpress'])
             ->when($this->search !== '', function ($query) {
                 $term = '%'.$this->search.'%';
                 $query->where(function ($sub) use ($term) {
@@ -39,13 +39,8 @@ class Sites extends Component
                 });
             });
 
-        $dir = $this->sortDir();
-
-        match ($this->sortField) {
-            'date_statut' => $query->orderBy('date_statut', $dir),
-            'boutique'    => $query->orderBy('boutique_en_ligne', $dir),
-            default       => $query->orderBy('nom', $dir), // nom
-        };
+        // Seul le nom est triable dans la liste (les autres colonnes sont des indicateurs).
+        $query->orderBy('nom', $this->sortDir());
 
         return $query->get();
     }

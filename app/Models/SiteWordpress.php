@@ -28,4 +28,11 @@ class SiteWordpress extends Model
     {
         return $this->belongsTo(Site::class);
     }
+
+    /** L'onglet contient-il au moins un identifiant renseigné ? (pour la liste des sites) */
+    public function hasData(): bool
+    {
+        return filled($this->lien_admin) || filled($this->identifiant_admin) || filled($this->getRawOriginal('mot_de_passe_admin'))
+            || filled($this->lien_client) || filled($this->identifiant_client) || filled($this->getRawOriginal('mot_de_passe_client'));
+    }
 }

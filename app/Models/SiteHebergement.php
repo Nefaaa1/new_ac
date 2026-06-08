@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** Hébergement d'un site (1-1). Mot de passe chiffré au repos. */
 #[Fillable([
     'site_id', 'nom', 'registrar', 'identifiant', 'mot_de_passe',
-    'periode_renouvellement', 'paiement_agence', 'client_visible',
+    'periode_renouvellement', 'paiement_agence', 'paiement_mois', 'client_visible',
 ])]
 class SiteHebergement extends Model
 {
@@ -38,5 +38,12 @@ class SiteHebergement extends Model
     public function periodeLabel(): ?string
     {
         return self::PERIODES[$this->periode_renouvellement] ?? null;
+    }
+
+    /** L'onglet contient-il au moins un identifiant renseigné ? (pour la liste des sites) */
+    public function hasData(): bool
+    {
+        return filled($this->nom) || filled($this->registrar)
+            || filled($this->identifiant) || filled($this->getRawOriginal('mot_de_passe'));
     }
 }

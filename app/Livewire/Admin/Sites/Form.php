@@ -27,7 +27,7 @@ class Form extends Component
     /** Onglet Hébergement (extension 1-1). */
     public array $hebergement = [
         'nom' => '', 'registrar' => '', 'identifiant' => '', 'mot_de_passe' => '',
-        'periode_renouvellement' => '', 'paiement_agence' => false, 'client_visible' => false,
+        'periode_renouvellement' => '', 'paiement_agence' => false, 'paiement_mois' => '', 'client_visible' => false,
     ];
 
     /** Onglet FTP (extension 1-1). */
@@ -106,6 +106,7 @@ class Form extends Component
             'hebergement.mot_de_passe' => 'nullable|string|max:255',
             'hebergement.periode_renouvellement' => ['nullable', 'in:'.implode(',', array_keys(SiteHebergement::PERIODES))],
             'hebergement.paiement_agence' => 'boolean',
+            'hebergement.paiement_mois' => 'nullable|string|max:255',
             'hebergement.client_visible' => 'boolean',
 
             'ftp.hote' => 'nullable|string|max:255',

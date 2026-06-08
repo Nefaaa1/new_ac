@@ -17,7 +17,7 @@
                             <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
                                   style="background-color: {{ $site->statut->color() }}1a; color: {{ $site->statut->color() }}">
                                 <span class="h-1.5 w-1.5 rounded-full" style="background-color: {{ $site->statut->color() }}"></span>
-                                {{ $site->statut->libelle }}
+                                {{ $site->statut->libelle }}@if($site->statut->requiert_date && $site->date_statut) · {{ $site->date_statut->format('d/m/Y') }}@endif
                             </span>
                         @endif
                     </h1>
@@ -80,7 +80,7 @@
 
     {{-- Onglet Général --}}
     <div x-show="tab === 'general'" class="mt-6 space-y-6">
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-3">
             <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
                     <x-lucide-shopping-cart class="h-4 w-4 text-primary" /> Boutique
@@ -91,13 +91,9 @@
                 <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
                     <x-lucide-activity class="h-4 w-4 text-primary" /> Statut
                 </div>
-                <p class="mt-2 text-base font-semibold text-zinc-900">{{ $site->statut?->libelle ?? '—' }}</p>
-            </div>
-            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                    <x-lucide-calendar class="h-4 w-4 text-primary" /> Date statut
-                </div>
-                <p class="mt-2 text-base font-semibold text-zinc-900">{{ $site->date_statut?->format('d/m/Y') ?? '—' }}</p>
+                <p class="mt-2 text-base font-semibold text-zinc-900">
+                    {{ $site->statut?->libelle ?? '—' }}@if($site->statut?->requiert_date && $site->date_statut)<span class="text-zinc-400"> · {{ $site->date_statut->format('d/m/Y') }}</span>@endif
+                </p>
             </div>
             <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
@@ -153,6 +149,12 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-zinc-400">Paiement agence</p>
                     <p class="mt-1 text-sm text-zinc-800">{{ $h?->paiement_agence ? 'Oui' : 'Non' }}</p>
                 </div>
+                @if($h?->paiement_agence && filled($h?->paiement_mois))
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-zinc-400">Mois de paiement</p>
+                        <p class="mt-1 text-sm text-zinc-800">{{ $h->paiement_mois }}</p>
+                    </div>
+                @endif
             </div>
         </section>
     </div>

@@ -137,10 +137,21 @@
                     </x-select>
                 </div>
 
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <x-checkbox wire:model="hebergement.paiement_agence" label="Paiement agence" />
-                    <x-checkbox wire:model="hebergement.client_visible"
-                                label="Visible par le client" hint="Identifiants affichés dans l'espace client." />
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <x-checkbox wire:model.live="hebergement.paiement_agence" label="Paiement agence" />
+                        <x-checkbox wire:model="hebergement.client_visible"
+                                    label="Visible par le client" hint="Identifiants affichés dans l'espace client." />
+                    </div>
+
+                    {{-- Champ libre, visible uniquement si le paiement est géré par l'agence --}}
+                    <div x-show="$wire.hebergement.paiement_agence" x-cloak
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0">
+                        <x-text-input label="Mois de paiement" wire:model="hebergement.paiement_mois"
+                                      placeholder="Ex. Janvier, échéance…" />
+                    </div>
                 </div>
             </section>
         </div>
