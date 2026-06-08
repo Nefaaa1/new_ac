@@ -140,7 +140,8 @@ Logout : `POST /logout` (route `logout`), appelé via `<form>` dans la topbar ad
 - **Création à la volée** : bouton « Créer le contrat « … » » → `createContrat()` = `redirectRoute('admin.contrats.create', ['libelle'=>$search], navigate:true)` (le libellé saisi pré-remplit le form contrat). ⚠️ redirige donc hors du formulaire en cours (comportement demandé).
 - Erreur de validation : portée par le **parent** (`@error('contrat_id')` après la balise `<livewire:…>`), pas par le picker. Dropdown : Alpine `@entangle('showResults')` + `@click.outside`.
 
-## Dashboard admin — note & favoris
+## Dashboard admin — stats, note & favoris
+- **Dashboard connecté** (`Admin\Dashboard`) : computeds `stats()` (4 cartes comptées **filtrées `accessibleBy`** : Sites / Clients / Contrats / Tickets ouverts), `myTickets()` (mes tickets ouverts — statut non-clôture — attribués à moi **ou** à une de mes équipes, triés importance `FIELD(elevee,moyenne,faible)` puis date, limite 6) et `activiteMois()` (mois courant : heures d'actions `Action::formatHeures(sum temps)`, nb d'actions, nb de tickets `terminee_at` ce mois). `openTicketsQuery()` = base partagée (`whereDoesntHave('statut', cloture=true)` + site accessible `withTrashed`). Vue : cartes stats (halo coloré primary/secondary) + panneau « À traiter » (liste tickets, pastille importance + chip statut hex) + carte « Activité du mois » (fond `zinc-900`, accent secondary) + Notepad + Favoris. **Plus de section « Bienvenue » statique.**
 - **Note pense-bête** : table `notes` (`user_id` unique, `content`) → `User hasOne`. Composant `Admin\Notepad`
   embarqué dans le dashboard, auto-save `wire:model.live.debounce.800ms` + hook `updatedContent` (updateOrCreate).
 - **Favoris** : table `favorites` (`user_id`, `label`, `route_name`, `params` json, `position`, `unique(user_id,route_name)`).
