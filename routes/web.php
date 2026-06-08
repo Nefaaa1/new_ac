@@ -54,7 +54,10 @@ Route::middleware(['auth', 'not-suspended', 'type:admin'])->prefix('admin')->nam
     // Gestion : réservé aux admins "accès total" (Gate manage-admins).
     Route::prefix('gestion')->name('gestion.')->middleware('can:manage-admins')->group(function () {
         Route::get('/admins', Admin\Gestion\Admins::class)->name('admins');
+        Route::get('/equipes', Admin\Gestion\Equipes::class)->name('equipes');
         Route::get('/statuts', Admin\Gestion\Statuts::class)->name('statuts');
+        Route::get('/statuts-tickets', Admin\Gestion\TicketStatuts::class)->name('ticket-statuts');
+        Route::get('/statuts-devis', Admin\Gestion\DevisStatuts::class)->name('devis-statuts');
     });
 });
 

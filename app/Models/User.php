@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -79,6 +80,14 @@ class User extends Authenticatable
     public function accessGrants(): HasMany
     {
         return $this->hasMany(AccessGrant::class);
+    }
+
+    /**
+     * Équipes dont l'utilisateur (admin) est membre.
+     */
+    public function equipes(): BelongsToMany
+    {
+        return $this->belongsToMany(Equipe::class, 'equipe_user');
     }
 
     /**

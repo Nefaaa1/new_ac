@@ -37,8 +37,11 @@ class Navigation
                 'color' => 'rose',
                 'can' => 'manage-admins', // groupe affiché uniquement aux admins "accès total"
                 'items' => [
-                    ['route' => 'admin.gestion.admins',  'label' => 'Administrateurs', 'icon' => 'shield-user'],
-                    ['route' => 'admin.gestion.statuts', 'label' => 'Statuts',         'icon' => 'tags'],
+                    ['route' => 'admin.gestion.admins',          'label' => 'Administrateurs', 'icon' => 'shield-user'],
+                    ['route' => 'admin.gestion.equipes',         'label' => 'Équipes',         'icon' => 'users-round'],
+                    ['route' => 'admin.gestion.statuts',         'label' => 'Statuts sites',   'icon' => 'tags'],
+                    ['route' => 'admin.gestion.ticket-statuts',  'label' => 'Statuts tickets', 'icon' => 'ticket'],
+                    ['route' => 'admin.gestion.devis-statuts',   'label' => 'Statuts devis',   'icon' => 'file-check'],
                 ],
             ],
         ];
