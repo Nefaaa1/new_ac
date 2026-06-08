@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Admin\Sites;
 
-use App\Models\Client;
 use App\Models\Site;
 use App\Models\SiteHebergement;
 use App\Models\Statut;
@@ -75,18 +74,6 @@ class Form extends Component
                 $this->wordpress = $site->wordpress->only(array_keys($this->wordpress));
             }
         }
-    }
-
-    /** Clients disponibles pour le rattachement (filtrés par accès). */
-    #[Computed]
-    public function clientsList()
-    {
-        return Client::query()
-            ->with('user')
-            ->whereHas('user', fn ($u) => $u->where('type', 'client')->accessibleBy(auth()->user()))
-            ->get()
-            ->sortBy(fn (Client $c) => $c->societe ?: $c->user?->name)
-            ->values();
     }
 
     /** Statuts disponibles. */

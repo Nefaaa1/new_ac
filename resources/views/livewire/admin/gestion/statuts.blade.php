@@ -93,12 +93,12 @@
 
             <form wire:submit="save" class="flex flex-1 flex-col overflow-hidden">
                 <div class="flex-1 space-y-6 overflow-y-auto px-6 py-6">
-                    <x-text-input label="Libellé" name="libelle" floatError wire:model="libelle"
+                    <x-text-input label="Libellé" name="libelle" required floatError wire:model="libelle"
                                   placeholder="Ex. En ligne, En maintenance…" />
 
                     {{-- Couleur --}}
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Couleur</label>
+                        <x-field-label label="Couleur" :required="true" />
                         <div class="flex items-center gap-3">
                             <input type="color" wire:model.live="couleur"
                                    class="h-11 w-14 shrink-0 cursor-pointer rounded-[10px] border-[2px] border-primary bg-white p-1" />

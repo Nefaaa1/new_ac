@@ -6,6 +6,7 @@
     'name' => null,
     'error' => null,
     'floatError' => false, // erreur en position absolue (ne décale pas la mise en page)
+    'required' => false,   // astérisque amber « champ obligatoire »
 ])
 
 @php
@@ -16,9 +17,7 @@
 @endphp
 
 <div class="relative">
-    @if($label)
-        <label class="mb-1 block truncate text-sm font-medium text-gray-700">{{ $label }}</label>
-    @endif
+    <x-field-label :label="$label" :required="$required" />
 
     <textarea
         @disabled($disabled)
@@ -26,6 +25,7 @@
         rows="{{ $rows }}"
         placeholder="{{ $placeholder }}"
         @if($hasError) aria-invalid="true" @endif
+        @if($required) aria-required="true" @endif
         {{ $attributes->merge([
             'class' => 'w-full resize-none bg-transparent border-[2px] rounded-[10px] px-5 py-2.5 text-sm text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-0 transition '
                 . ($hasError

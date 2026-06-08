@@ -132,15 +132,15 @@
 
             <form wire:submit="save" class="flex flex-1 flex-col overflow-hidden">
                 <div class="flex-1 space-y-6 overflow-y-auto px-6 py-6">
-                    <x-text-input label="Intitulé" name="intitule" floatError wire:model="intitule" />
+                    <x-text-input label="Intitulé" name="intitule" required floatError wire:model="intitule" />
 
                     <div class="grid grid-cols-2 items-start gap-4">
-                        <x-date-input label="Date" name="date" model="date" floatError />
+                        <x-date-input label="Date" name="date" model="date" required floatError />
                         <x-text-input label="Temps (heures)" name="temps" type="number" step="0.25" min="0"
-                                      floatError wire:model="temps" placeholder="1.5" />
+                                      required floatError wire:model="temps" placeholder="1.5" />
                     </div>
 
-                    <x-select label="Type d'action" name="type" floatError wire:model="type">
+                    <x-select label="Type d'action" name="type" required floatError wire:model="type">
                         <option value="">— Sélectionner —</option>
                         @foreach(\App\Models\Action::TYPES as $value => $label)
                             <option value="{{ $value }}">{{ $label }}</option>
@@ -156,7 +156,7 @@
                             </div>
                         @endif
                         <div class="relative">
-                            <livewire:admin.contrat-picker wire:model="contrat_id" :key="'contrat-picker-'.$formNonce" />
+                            <livewire:admin.contrat-picker wire:model="contrat_id" :required="true" :key="'contrat-picker-'.$formNonce" />
                             @error('contrat_id')
                                 <p class="absolute left-1 top-full mt-0.5 whitespace-nowrap text-[11px] leading-tight text-red-600">{{ $message }}</p>
                             @enderror
@@ -164,7 +164,7 @@
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Commentaire (facultatif)</label>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">Commentaire</label>
                         <textarea wire:model="commentaire" rows="3"
                                   class="w-full resize-none rounded-[10px] border-[2px] border-primary bg-transparent px-5 py-2.5 text-sm text-gray-600 placeholder-gray-400 transition focus:border-secondary focus:outline-none focus:ring-0"></textarea>
                     </div>

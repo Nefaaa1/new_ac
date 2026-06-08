@@ -68,15 +68,15 @@
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">Identité du site</h2>
                 </header>
 
-                <x-text-input label="Nom du site" name="nom" floatError wire:model="nom"
+                <x-text-input label="Nom du site" name="nom" required floatError wire:model="nom"
                               placeholder="Ex. Boutique Dupont" />
 
-                <x-select label="Client (facultatif)" name="client_id" floatError wire:model="client_id">
-                    <option value="">— Aucun —</option>
-                    @foreach($this->clientsList as $client)
-                        <option value="{{ $client->id }}">{{ $client->societe ?: $client->user?->name }}</option>
-                    @endforeach
-                </x-select>
+                <div class="relative">
+                    <livewire:admin.client-picker wire:model="client_id" :key="'client-picker-'.$editingId" />
+                    @error('client_id')
+                        <p class="absolute left-1 top-full mt-0.5 whitespace-nowrap text-[11px] leading-tight text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 <x-checkbox wire:model="boutique_en_ligne"
                             label="Boutique en ligne"
@@ -99,7 +99,7 @@
                 </x-select>
 
                 <div>
-                    <x-date-input :label="$this->dateRequise ? 'Date de statut (requise)' : 'Date de statut (facultative)'"
+                    <x-date-input label="Date de statut" :required="$this->dateRequise"
                                   name="date_statut" model="date_statut" floatError />
                     @if($this->dateRequise)
                         <p class="mt-1 flex items-center gap-1 text-xs text-secondary">
@@ -108,7 +108,7 @@
                     @endif
                 </div>
 
-                <x-textarea label="Mot de passe complémentaire (facultatif)" name="mot_de_passe_complementaire"
+                <x-textarea label="Mot de passe complémentaire" name="mot_de_passe_complementaire"
                             rows="3" wire:model="mot_de_passe_complementaire"
                             placeholder="Notes / identifiants additionnels…" />
             </section>
@@ -188,36 +188,42 @@
             </section>
         </div>
 
-        {{-- Onglet WordPress --}}
-        <div x-show="$wire.activeTab === 'wordpress'" x-cloak class="mt-6">
+        {{-- Onglet WordPress : accès admin (gauche) + accès client (droite) --}}
+        <div x-show="$wire.activeTab === 'wordpress'" x-cloak class="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+            {{-- Accès administrateur --}}
             <section class="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
                 <header class="flex items-center gap-2.5 border-b border-zinc-100 pb-4">
                     <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <x-lucide-layout-template class="h-4 w-4" />
+                        <x-lucide-shield-user class="h-4 w-4" />
                     </span>
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">WordPress</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">Accès administrateur</h2>
                 </header>
 
-                <div class="space-y-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-primary">Accès administrateur</p>
-                    <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <x-text-input label="Lien admin" wire:model="wordpress.lien_admin" placeholder="https://…/wp-admin" />
-                        <x-text-input label="Identifiant admin" wire:model="wordpress.identifiant_admin" />
-                        <x-password-input label="Mot de passe admin" wire:model="wordpress.mot_de_passe_admin" />
-                    </div>
-                </div>
+                <x-text-input label="Lien admin" wire:model="wordpress.lien_admin" placeholder="https://…/wp-admin" />
+                <x-text-input label="Identifiant admin" wire:model="wordpress.identifiant_admin" />
+                <x-password-input label="Mot de passe admin" wire:model="wordpress.mot_de_passe_admin" />
+            </section>
 
-                <div class="space-y-4 border-t border-zinc-100 pt-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-secondary">Accès client</p>
-                    <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <x-text-input label="Lien client" wire:model="wordpress.lien_client" />
-                        <x-text-input label="Identifiant client" wire:model="wordpress.identifiant_client" />
-                        <x-password-input label="Mot de passe client" wire:model="wordpress.mot_de_passe_client" />
-                    </div>
-                </div>
+            {{-- Accès client --}}
+            <section class="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+                <header class="flex items-center gap-2.5 border-b border-zinc-100 pb-4">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/15 text-secondary">
+                        <x-lucide-circle-user class="h-4 w-4" />
+                    </span>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">Accès client</h2>
+                </header>
 
-                <x-checkbox wire:model="wordpress.client_visible"
-                            label="Visible par le client" hint="Identifiants affichés dans l'espace client." />
+                <x-text-input label="Lien client" wire:model="wordpress.lien_client" />
+                <x-text-input label="Identifiant client" wire:model="wordpress.identifiant_client" />
+                <x-password-input label="Mot de passe client" wire:model="wordpress.mot_de_passe_client" />
+
+                
+            </section>
+            <section class="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+                <div class="">
+                    <x-checkbox wire:model="wordpress.client_visible"
+                                label="Visible par le client" hint="Identifiants affichés dans l'espace client." />
+                </div>
             </section>
         </div>
 

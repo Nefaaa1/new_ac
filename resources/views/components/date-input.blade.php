@@ -7,6 +7,7 @@
     'placeholder' => 'jj / mm / aaaa',
     'error' => null,
     'floatError' => false,  // erreur en position absolue (ne décale pas la mise en page)
+    'required' => false,    // astérisque amber « champ obligatoire »
 ])
 
 @php
@@ -30,13 +31,12 @@
 @endphp
 
 <div class="relative">
-    @if($label)
-        <label class="mb-1 block truncate text-sm font-medium text-gray-700">{{ $label }}</label>
-    @endif
+    <x-field-label :label="$label" :required="$required" />
 
     {{-- wire:ignore : Flatpickr manipule le DOM, Livewire ne doit pas le ré-écraser --}}
     <div wire:ignore class="relative" x-data="datePicker('{{ $model }}', @js($inputClasses))">
         <input x-ref="input" type="text" placeholder="{{ $placeholder }}" @disabled($disabled)
+               @if($required) aria-required="true" @endif
                class="{{ $inputClasses }}" />
         <x-lucide-calendar class="pointer-events-none absolute right-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary" />
     </div>

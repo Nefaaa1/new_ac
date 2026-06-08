@@ -145,20 +145,20 @@
 
                 <form wire:submit="save" class="flex flex-1 flex-col overflow-hidden">
                     <div class="flex-1 space-y-6 overflow-y-auto px-6 py-6">
-                    <x-select label="Civilité" name="civilite" floatError wire:model="civilite">
+                    <x-select label="Civilité" name="civilite" required floatError wire:model="civilite">
                         <option value="">Sélectionner…</option>
                         <option value="M">M.</option>
                         <option value="Mme">Mme</option>
                     </x-select>
 
                     <div class="grid grid-cols-2 items-start gap-4">
-                        <x-text-input label="Prénom" name="prenom" floatError wire:model.live.debounce.300ms="prenom" />
-                        <x-text-input label="Nom" name="nom" floatError wire:model.live.debounce.300ms="nom" />
+                        <x-text-input label="Prénom" name="prenom" required floatError wire:model.live.debounce.300ms="prenom" />
+                        <x-text-input label="Nom" name="nom" required floatError wire:model.live.debounce.300ms="nom" />
                     </div>
 
-                    <x-text-input label="Identifiant (login)" name="login" placeholder="prenomnom" floatError wire:model.live.debounce.400ms="login" />
+                    <x-text-input label="Identifiant (login)" name="login" required placeholder="prenomnom" floatError wire:model.live.debounce.400ms="login" />
 
-                    <x-text-input label="Email" name="email" type="email" floatError wire:model="email" />
+                    <x-text-input label="Email" name="email" type="email" required floatError wire:model="email" />
 
                     <div class="grid grid-cols-2 items-start gap-4">
                         <x-text-input label="Email secondaire" name="email_secondaire" type="email" floatError wire:model="email_secondaire" />

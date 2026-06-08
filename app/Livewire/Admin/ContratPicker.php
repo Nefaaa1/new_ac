@@ -22,6 +22,9 @@ class ContratPicker extends Component
 
     public ?string $label = 'Contrat';
 
+    /** Affiche l'astérisque amber « champ obligatoire » sur le label. */
+    public bool $required = false;
+
     public string $placeholder = 'Rechercher un contrat…';
 
     /** Texte saisi dans le champ. */

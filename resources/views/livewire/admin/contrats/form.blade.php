@@ -52,21 +52,21 @@
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">Informations générales</h2>
                 </header>
 
-                <x-text-input label="Libellé du contrat" name="libelle" floatError wire:model="libelle"
+                <x-text-input label="Libellé du contrat" name="libelle" required floatError wire:model="libelle"
                               placeholder="Ex. Community management mensuel" />
 
-                <x-select label="Client (facultatif)" name="client_id" floatError wire:model="client_id">
-                    <option value="">— Aucun —</option>
-                    @foreach($this->clientsList as $client)
-                        <option value="{{ $client->id }}">{{ $client->societe ?: $client->user?->name }}</option>
-                    @endforeach
-                </x-select>
+                <div class="relative">
+                    <livewire:admin.client-picker wire:model="client_id" :key="'client-picker-'.$editingId" />
+                    @error('client_id')
+                        <p class="absolute left-1 top-full mt-0.5 whitespace-nowrap text-[11px] leading-tight text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 <x-text-input label="Site web" name="site_web" floatError wire:model="site_web" placeholder="https://…" />
 
                 <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                     <x-date-input label="Début du contrat" name="date_debut" model="date_debut" floatError />
-                    <x-date-input label="Fin (facultatif)" name="date_fin" model="date_fin" floatError />
+                    <x-date-input label="Fin" name="date_fin" model="date_fin" floatError />
                 </div>
             </section>
 
@@ -79,14 +79,14 @@
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">Conditions &amp; facturation</h2>
                 </header>
 
-                <x-select label="Type de contrat" name="type" floatError wire:model="type">
+                <x-select label="Type de contrat" name="type" required floatError wire:model="type">
                     <option value="">— Sélectionner —</option>
                     @foreach(\App\Models\Contrat::TYPES as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
                     @endforeach
                 </x-select>
 
-                <x-select label="Cycle de facturation" name="cycle_facturation" floatError wire:model="cycle_facturation">
+                <x-select label="Cycle de facturation" name="cycle_facturation" required floatError wire:model="cycle_facturation">
                     <option value="">— Sélectionner —</option>
                     @foreach(\App\Models\Contrat::CYCLES as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
@@ -95,9 +95,9 @@
 
                 <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                     <x-text-input label="Taux horaire (€)" name="taux_horaire" type="number" step="0.01" min="0"
-                                  floatError wire:model="taux_horaire" placeholder="0.00" />
+                                  required floatError wire:model="taux_horaire" placeholder="0.00" />
                     <x-text-input label="Crédits (1 = 1h)" name="credits" type="number" min="0"
-                                  floatError wire:model="credits" placeholder="0" />
+                                  required floatError wire:model="credits" placeholder="0" />
                 </div>
             </section>
         </div>
@@ -119,14 +119,14 @@
                     </div>
 
                     <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <x-select label="Réseau" name="reseaux.{{ $i }}.reseau" floatError wire:model="reseaux.{{ $i }}.reseau" class="!bg-white">
+                        <x-select label="Réseau" name="reseaux.{{ $i }}.reseau" required floatError wire:model="reseaux.{{ $i }}.reseau" class="!bg-white">
                             <option value="">— Sélectionner —</option>
                             @foreach(\App\Models\ContratReseau::RESEAUX as $value => $meta)
                                 <option value="{{ $value }}">{{ $meta['label'] }}</option>
                             @endforeach
                         </x-select>
 
-                        <x-select label="Gestion du compte (facultatif)" name="reseaux.{{ $i }}.gestion" floatError wire:model="reseaux.{{ $i }}.gestion" class="!bg-white">
+                        <x-select label="Gestion du compte" name="reseaux.{{ $i }}.gestion" floatError wire:model="reseaux.{{ $i }}.gestion" class="!bg-white">
                             <option value="">— Non précisé —</option>
                             @foreach(\App\Models\ContratReseau::GESTION as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>

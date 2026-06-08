@@ -2,11 +2,9 @@
 
 namespace App\Livewire\Admin\Contrats;
 
-use App\Models\Client;
 use App\Models\Contrat;
 use App\Models\ContratReseau;
 use Illuminate\Support\Str;
-use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -66,18 +64,6 @@ class Form extends Component
 
         // Création : libellé pré-rempli (ex. depuis l'autocomplétion d'une action).
         $this->libelle = trim((string) request()->query('libelle'));
-    }
-
-    /** Clients disponibles pour le rattachement (filtrés par accès). */
-    #[Computed]
-    public function clientsList()
-    {
-        return Client::query()
-            ->with('user')
-            ->whereHas('user', fn ($u) => $u->where('type', 'client')->accessibleBy(auth()->user()))
-            ->get()
-            ->sortBy(fn (Client $c) => $c->societe ?: $c->user?->name)
-            ->values();
     }
 
     public function addReseau(): void
