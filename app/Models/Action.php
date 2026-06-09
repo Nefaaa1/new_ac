@@ -53,4 +53,26 @@ class Action extends Model
     {
         return rtrim(rtrim(number_format($heures, 2, ',', ' '), '0'), ',').' h';
     }
+
+    /** Formate un nombre d'heures décimal en « 2h 30min » (ex. 2.50 → « 2h 30min »). */
+    public static function formatHeuresHM(float $heures): string
+    {
+        $h = (int) floor($heures);
+        $m = (int) round(($heures - $h) * 60);
+
+        if ($m === 60) { // arrondi qui bascule à l'heure pleine
+            $h++;
+            $m = 0;
+        }
+
+        $parts = [];
+        if ($h > 0) {
+            $parts[] = $h.'h';
+        }
+        if ($m > 0) {
+            $parts[] = $m.'min';
+        }
+
+        return $parts ? implode(' ', $parts) : '0min';
+    }
 }

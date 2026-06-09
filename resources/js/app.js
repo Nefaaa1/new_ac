@@ -5,6 +5,51 @@
 
 import flatpickr from 'flatpickr';
 import { French } from 'flatpickr/dist/l10n/fr.js';
+import tippy from 'tippy.js';
+import 'tippy.js/dist/tippy.css';
+
+// ─── Tooltips Tippy.js (remplacent le `title` natif, moche, sur toute la plateforme) ───
+// Tout élément portant un attribut `title` est automatiquement « enrichi » :
+// on retire le `title` (sinon le tooltip natif s'affiche aussi) et on branche Tippy.
+// Un MutationObserver couvre le contenu injecté dynamiquement (morphs Livewire, slide-overs…).
+const tippyOptions = {
+    theme: 'pwc',
+    delay: [250, 0],
+    duration: [150, 100],
+    allowHTML: false,
+};
+
+function enhanceTooltip(el) {
+    const content = el.getAttribute('title');
+    if (! content) return;
+    el.removeAttribute('title'); // tue le tooltip natif
+    if (el._tippy) el._tippy.destroy(); // évite les doublons sur re-render
+    tippy(el, { content, ...tippyOptions });
+}
+
+function scanTooltips(root) {
+    if (! root || root.nodeType !== 1) return;
+    if (root.hasAttribute('title')) enhanceTooltip(root);
+    root.querySelectorAll?.('[title]').forEach(enhanceTooltip);
+}
+
+document.addEventListener('DOMContentLoaded', () => scanTooltips(document.body));
+document.addEventListener('livewire:navigated', () => scanTooltips(document.body));
+
+new MutationObserver((mutations) => {
+    for (const m of mutations) {
+        if (m.type === 'childList') {
+            m.addedNodes.forEach(scanTooltips);
+        } else if (m.type === 'attributes' && m.target.getAttribute('title')) {
+            enhanceTooltip(m.target); // Livewire a (re)posé un title après un morph
+        }
+    }
+}).observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['title'],
+});
 
 // Sélecteur de date (Flatpickr). Thème dans resources/css/app.css.
 // Usage : <x-date-input model="date_debut" /> (cf. composant Blade).

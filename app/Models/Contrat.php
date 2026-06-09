@@ -54,6 +54,11 @@ class Contrat extends Model
         return $this->hasMany(ContratReseau::class)->orderBy('position');
     }
 
+    public function actions(): HasMany
+    {
+        return $this->hasMany(Action::class);
+    }
+
     /** Libellé lisible du type de contrat. */
     public function typeLabel(): ?string
     {

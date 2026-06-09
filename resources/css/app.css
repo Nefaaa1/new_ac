@@ -88,3 +88,35 @@
 .numInputWrapper:hover {
     background: rgba(0, 164, 188, 0.06);
 }
+
+/* ------------------------------------------------------------------ */
+/* Tippy.js — thème « pwc » aligné sur le design (zinc-950 + ambre)     */
+/* Remplace le tooltip natif (cf. resources/js/app.js)                  */
+/* ------------------------------------------------------------------ */
+.tippy-box[data-theme~='pwc'] {
+    background-color: #18181b; /* zinc-900 */
+    color: #fafafa;
+    font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px -8px rgba(24, 24, 27, 0.5);
+}
+
+.tippy-box[data-theme~='pwc'] .tippy-content {
+    padding: 6px 10px;
+}
+
+.tippy-box[data-theme~='pwc'][data-placement^='top'] > .tippy-arrow::before {
+    border-top-color: #18181b;
+}
+.tippy-box[data-theme~='pwc'][data-placement^='bottom'] > .tippy-arrow::before {
+    border-bottom-color: #18181b;
+}
+.tippy-box[data-theme~='pwc'][data-placement^='left'] > .tippy-arrow::before {
+    border-left-color: #18181b;
+}
+.tippy-box[data-theme~='pwc'][data-placement^='right'] > .tippy-arrow::before {
+    border-right-color: #18181b;
+}
