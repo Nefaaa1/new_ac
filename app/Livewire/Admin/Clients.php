@@ -78,6 +78,7 @@ class Clients extends Component
         match ($this->sortField) {
             'nom' => $query->orderBy('nom', $dir)->orderBy('prenom', $dir),
             'email' => $query->orderBy('email', $dir),
+            'last_login_at' => $query->orderBy('last_login_at', $dir),
             default => $query->orderBy($societe, $dir)->orderBy('nom'), // société
         };
 

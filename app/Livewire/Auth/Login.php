@@ -53,6 +53,8 @@ class Login extends Component
 
         RateLimiter::clear($this->throttleKey());
 
+        Auth::user()->forceFill(['last_login_at' => now()])->save();
+
         session()->regenerate();
 
         $this->redirectTo = Auth::user()->isAdmin()

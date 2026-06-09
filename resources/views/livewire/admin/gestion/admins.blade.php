@@ -37,6 +37,7 @@
                     <x-admin.sort-header field="email" label="Email" :sort="$sortField" :direction="$sortDirection" />
                     <x-admin.sort-header field="access_level" label="Accès" :sort="$sortField" :direction="$sortDirection" />
                     <x-admin.sort-header field="suspended_at" label="Statut" :sort="$sortField" :direction="$sortDirection" />
+                    <x-admin.sort-header field="last_login_at" label="Dernière connexion" :sort="$sortField" :direction="$sortDirection" />
                     <th class="px-5 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
@@ -89,6 +90,15 @@
                             @endif
                         </td>
                         <td class="px-5 py-3">
+                            @if($admin->last_login_at)
+                                <span class="text-zinc-600" title="{{ $admin->last_login_at->format('d/m/Y à H:i') }}">
+                                    {{ $admin->last_login_at->locale('fr')->diffForHumans() }}
+                                </span>
+                            @else
+                                <span class="text-xs italic text-zinc-300">Jamais connecté</span>
+                            @endif
+                        </td>
+                        <td class="px-5 py-3">
                             <div class="flex items-center justify-end gap-1">
                                 <button wire:click="editAdmin({{ $admin->id }})" type="button" title="Modifier"
                                         class="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 hover:bg-primary/10 hover:text-primary">
@@ -112,7 +122,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-5 py-10 text-center text-sm text-zinc-400">Aucun administrateur.</td>
+                        <td colspan="6" class="px-5 py-10 text-center text-sm text-zinc-400">Aucun administrateur.</td>
                     </tr>
                 @endforelse
             </tbody>

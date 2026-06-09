@@ -50,6 +50,7 @@
                     <x-admin.sort-header field="societe" label="Société" :sort="$sortField" :direction="$sortDirection" />
                     <x-admin.sort-header field="nom" label="Client" :sort="$sortField" :direction="$sortDirection" />
                     <x-admin.sort-header field="email" label="Email" :sort="$sortField" :direction="$sortDirection" />
+                    <x-admin.sort-header field="last_login_at" label="Dernière connexion" :sort="$sortField" :direction="$sortDirection" />
                     <th class="px-5 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
@@ -87,6 +88,15 @@
                             </span>
                         </td>
                         <td class="px-5 py-3">
+                            @if($client->last_login_at)
+                                <span class="text-zinc-600" title="{{ $client->last_login_at->format('d/m/Y à H:i') }}">
+                                    {{ $client->last_login_at->locale('fr')->diffForHumans() }}
+                                </span>
+                            @else
+                                <span class="text-xs italic text-zinc-300">Jamais connecté</span>
+                            @endif
+                        </td>
+                        <td class="px-5 py-3">
                             <div class="flex items-center justify-end gap-1">
                                 <button wire:click="editClient({{ $client->id }})" type="button" title="Modifier"
                                         class="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 hover:bg-primary/10 hover:text-primary">
@@ -102,7 +112,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-5 py-12 text-center text-sm text-zinc-400">
+                        <td colspan="5" class="px-5 py-12 text-center text-sm text-zinc-400">
                             {{ $search !== '' ? 'Aucun client ne correspond à « '.$search.' ».' : 'Aucun client.' }}
                         </td>
                     </tr>

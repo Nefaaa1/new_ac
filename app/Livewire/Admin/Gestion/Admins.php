@@ -62,6 +62,7 @@ class Admins extends Component
             'email' => $query->orderBy('email', $dir),
             'access_level' => $query->orderBy('access_level', $dir),
             'suspended_at' => $query->orderBy('suspended_at', $dir),
+            'last_login_at' => $query->orderBy('last_login_at', $dir),
             default => $query->orderBy('nom', $dir)->orderBy('prenom', $dir), // administrateur
         };
 
