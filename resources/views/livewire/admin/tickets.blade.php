@@ -47,6 +47,16 @@
             </x-select>
         </div>
 
+        {{-- Filtre importance --}}
+        <div class="w-full sm:w-44">
+            <x-select wire:model.live="importanceFilter">
+                <option value="">Toute importance</option>
+                @foreach(\App\Models\Ticket::IMPORTANCES as $value => $label)
+                    <option value="{{ $value }}">{{ $label }}</option>
+                @endforeach
+            </x-select>
+        </div>
+
         {{-- Filtre devis --}}
         <div class="w-full sm:w-44">
             <x-select wire:model.live="devisFilter">
@@ -74,6 +84,7 @@
                     <th class="px-5 py-3.5">Site</th>
                     <x-admin.sort-header field="date" label="Date" :sort="$sortField" :direction="$sortDirection" />
                     <x-admin.sort-header field="demande" label="Demande" :sort="$sortField" :direction="$sortDirection" />
+                    <x-admin.sort-header field="importance" label="Importance" :sort="$sortField" :direction="$sortDirection" />
                     <th class="px-5 py-3.5">Statut</th>
                     <th class="px-5 py-3.5">Attribué à</th>
                     <th class="px-5 py-3.5">Temps</th>
@@ -105,18 +116,22 @@
                         </td>
                         {{-- Date --}}
                         <td class="px-5 py-3 whitespace-nowrap text-zinc-600">{{ $ticket->date?->format('d/m/Y') ?? '—' }}</td>
-                        {{-- Demande (+ importance + descriptif) --}}
+                        {{-- Demande (+ descriptif) --}}
                         <td class="px-5 py-3">
-                            <div class="flex items-start gap-2">
-                                <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full" style="background-color: {{ $ticket->importanceColor() }}"
-                                      title="Importance : {{ $ticket->importanceLabel() }}"></span>
-                                <div class="min-w-0">
-                                    <p class="font-medium text-zinc-900">{{ $ticket->demande }}</p>
-                                    @if($ticket->descriptif)
-                                        <p class="truncate text-xs text-zinc-400" title="{{ $ticket->descriptif }}">{{ $ticket->descriptif }}</p>
-                                    @endif
-                                </div>
+                            <div class="min-w-0">
+                                <p class="font-medium text-zinc-900">{{ $ticket->demande }}</p>
+                                @if($ticket->descriptif)
+                                    <p class="truncate text-xs text-zinc-400" title="{{ $ticket->descriptif }}">{{ $ticket->descriptif }}</p>
+                                @endif
                             </div>
+                        </td>
+                        {{-- Importance --}}
+                        <td class="px-5 py-3">
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                  style="background-color: {{ $ticket->importanceColor() }}1a; color: {{ $ticket->importanceColor() }}">
+                                <span class="h-1.5 w-1.5 rounded-full" style="background-color: {{ $ticket->importanceColor() }}"></span>
+                                {{ $ticket->importanceLabel() }}
+                            </span>
                         </td>
                         {{-- Statut --}}
                         <td class="px-5 py-3">
@@ -196,8 +211,8 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-5 py-12 text-center text-sm text-zinc-400">
-                            {{ ($search !== '' || $assigneFilter !== '' || $statutFilter !== '' || $devisFilter !== '') ? 'Aucun ticket ne correspond à votre recherche.' : 'Aucun ticket pour le moment.' }}
+                        <td colspan="9" class="px-5 py-12 text-center text-sm text-zinc-400">
+                            {{ ($search !== '' || $assigneFilter !== '' || $statutFilter !== '' || $importanceFilter !== '' || $devisFilter !== '') ? 'Aucun ticket ne correspond à votre recherche.' : 'Aucun ticket pour le moment.' }}
                         </td>
                     </tr>
                 @endforelse

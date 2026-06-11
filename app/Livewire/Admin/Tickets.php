@@ -38,6 +38,10 @@ class Tickets extends Component
     #[Url(except: '')]
     public string $statutFilter = '';
 
+    /** Filtre importance : '' (toutes) | faible | moyenne | elevee. */
+    #[Url(except: '')]
+    public string $importanceFilter = '';
+
     /** Filtre devis : '' (tous) | 'sans' (pas de devis) | id devis_statut. */
     #[Url(except: '')]
     public string $devisFilter = '';
@@ -114,6 +118,7 @@ class Tickets extends Component
             ->when(str_starts_with($this->assigneFilter, 'u:'), fn ($q) => $q->where('utilisateur_id', (int) substr($this->assigneFilter, 2)))
             ->when(str_starts_with($this->assigneFilter, 'e:'), fn ($q) => $q->where('equipe_id', (int) substr($this->assigneFilter, 2)))
             ->when($this->statutFilter !== '', fn ($q) => $q->where('statut_id', $this->statutFilter))
+            ->when($this->importanceFilter !== '', fn ($q) => $q->where('importance', $this->importanceFilter))
             ->when($this->devisFilter === 'sans', fn ($q) => $q->where('a_deviser', false))
             ->when($this->devisFilter !== '' && $this->devisFilter !== 'sans', fn ($q) => $q->where('a_deviser', true)->where('devis_statut_id', $this->devisFilter));
 
@@ -121,6 +126,8 @@ class Tickets extends Component
 
         match ($this->sortField) {
             'demande' => $query->orderBy('demande', $dir),
+            // asc = faible → élevée, desc = élevée → faible ($dir est normalisé par sortDir()).
+            'importance' => $query->orderByRaw("FIELD(importance, 'faible', 'moyenne', 'elevee') {$dir}")->orderByDesc('date'),
             default   => $query->orderBy('date', $dir)->orderByDesc('id'), // date
         };
 
