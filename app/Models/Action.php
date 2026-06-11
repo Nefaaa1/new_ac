@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['intitule', 'temps', 'date', 'type', 'contrat_id', 'commentaire'])]
+#[Fillable(['intitule', 'temps', 'date', 'type', 'contrat_id', 'commentaire', 'createur_id'])]
 class Action extends Model
 {
     use HasFactory;
@@ -34,6 +34,12 @@ class Action extends Model
     public function contrat(): BelongsTo
     {
         return $this->belongsTo(Contrat::class);
+    }
+
+    /** Admin ayant saisi l'action (null pour l'historique antérieur). */
+    public function createur(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'createur_id');
     }
 
     /** Libellé lisible du type d'action. */

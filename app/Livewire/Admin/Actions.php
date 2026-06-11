@@ -177,6 +177,7 @@ class Actions extends Component
             $action = Action::whereHas('contrat', fn ($q) => $q->withTrashed()->accessibleBy(auth()->user()))->findOrFail($this->editingId);
             $action->update($attributes);
         } else {
+            $attributes['createur_id'] = auth()->id();
             Action::create($attributes);
         }
 

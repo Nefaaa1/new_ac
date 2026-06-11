@@ -1,57 +1,82 @@
-<div>
-    <!-- En-tête -->
-    <div class="flex flex-col gap-1">
-        <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Tableau de bord</p>
-        <h1 class="text-2xl font-semibold tracking-tight text-zinc-900">
-            Bonjour {{ auth()->user()->prenom }} 👋
-        </h1>
-        <p class="text-sm text-zinc-500">{{ now()->locale('fr')->isoFormat('dddd D MMMM YYYY') }}</p>
+{{-- Cockpit sans scroll (xl) : zones fixes + zone flexible dont les listes scrollent en interne --}}
+<div class="flex min-h-0 flex-col gap-4 xl:h-full">
+    <!-- En-tête : salutation + créations rapides -->
+    <div class="flex shrink-0 flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-baseline gap-3">
+            <h1 class="text-xl font-semibold tracking-tight text-zinc-900">
+                Bonjour {{ auth()->user()->prenom }} 👋
+            </h1>
+            <p class="hidden text-xs font-medium uppercase tracking-[0.2em] text-zinc-400 md:block">
+                {{ now()->locale('fr')->isoFormat('dddd D MMMM') }}
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" x-data
+                    x-on:click="document.querySelector('#saisie-express input')?.focus()"
+                    class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition hover:border-secondary/50 hover:text-secondary">
+                <x-lucide-zap class="h-4 w-4" />
+                Nouvelle action
+            </button>
+            <button type="button" wire:click="$dispatch('open-quick-ticket')"
+                    class="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-primary/90">
+                <x-lucide-plus class="h-4 w-4" />
+                Nouveau ticket
+            </button>
+        </div>
     </div>
 
-    <!-- Cartes statistiques -->
-    <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        @foreach ($this->stats as $card)
-            <a href="{{ route($card['href']) }}" wire:navigate
-               class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+    <!-- Ma charge : 4 compteurs actionnables (cliquables → liste pré-filtrée) -->
+    <div class="grid shrink-0 grid-cols-2 gap-4 xl:grid-cols-4">
+        @foreach ($this->counters as $card)
+            <a href="{{ $card['href'] }}" wire:navigate
+               class="group flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
                 <span @class([
-                    'absolute right-0 top-0 h-20 w-20 -translate-y-8 translate-x-8 rounded-full blur-2xl transition group-hover:opacity-100',
-                    'bg-primary/10 opacity-60' => $card['tone'] === 'primary',
-                    'bg-secondary/10 opacity-60' => $card['tone'] === 'secondary',
-                ])></span>
-                <div class="relative flex items-center justify-between">
-                    <span @class([
-                        'flex h-11 w-11 items-center justify-center rounded-xl',
-                        'bg-primary/10 text-primary' => $card['tone'] === 'primary',
-                        'bg-secondary/10 text-secondary' => $card['tone'] === 'secondary',
-                    ])>
-                        <x-dynamic-component :component="'lucide-'.$card['icon']" class="h-5 w-5" />
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                    'bg-primary/10 text-primary' => $card['tone'] === 'primary',
+                    'bg-secondary/10 text-secondary' => $card['tone'] === 'secondary',
+                    'bg-emerald-500/10 text-emerald-600' => $card['tone'] === 'emerald',
+                ])>
+                    <x-dynamic-component :component="'lucide-'.$card['icon']" class="h-5 w-5" />
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="flex items-baseline gap-2">
+                        <span class="text-2xl font-semibold leading-none tracking-tight tabular-nums text-zinc-900">{{ $card['value'] }}</span>
+                        @if ($card['sub'])
+                            <span class="truncate text-[11px] font-semibold text-red-600">{{ $card['sub'] }}</span>
+                        @endif
                     </span>
-                    <x-lucide-arrow-up-right class="h-4 w-4 text-zinc-300 transition group-hover:text-primary" />
-                </div>
-                <p class="relative mt-4 text-3xl font-semibold tracking-tight text-zinc-900">{{ $card['value'] }}</p>
-                <p class="relative text-xs font-semibold uppercase tracking-wider text-zinc-400">{{ $card['label'] }}</p>
+                    <span class="mt-1 block truncate text-[11px] font-semibold uppercase tracking-wider text-zinc-400">{{ $card['label'] }}</span>
+                </span>
+                <x-lucide-arrow-up-right class="h-4 w-4 shrink-0 self-start text-zinc-300 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
             </a>
         @endforeach
     </div>
 
-    <!-- Tickets à traiter + pense-bête -->
-    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {{-- Mes tickets à traiter --}}
-        <div class="rounded-2xl border border-zinc-200 bg-white lg:col-span-2">
-            <div class="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
-                <h2 class="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-700">
-                    <x-lucide-list-checks class="h-4 w-4 text-primary" />
+    <!-- Favoris (barre de chips) -->
+    <livewire:admin.favorites />
+
+    <!-- Saisie express d'une action -->
+    <livewire:admin.quick-action />
+
+    <!-- Zone flexible : tickets à traiter + colonne droite -->
+    <div class="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-3">
+        {{-- Mes tickets à traiter (liste scrollable en interne sur xl) --}}
+        <div class="flex min-h-0 flex-col rounded-2xl border border-zinc-200 bg-white xl:col-span-2">
+            <div class="flex shrink-0 items-center justify-between border-b border-zinc-100 px-5 py-3">
+                <h2 class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    <x-lucide-list-checks class="h-3.5 w-3.5 text-primary" />
                     À traiter
                 </h2>
                 <a href="{{ route('admin.tickets') }}" wire:navigate
-                   class="text-xs font-semibold text-primary hover:text-primary/70">Tous les tickets →</a>
+                   class="text-[11px] font-semibold text-primary hover:text-primary/70">Tous les tickets →</a>
             </div>
 
-            <div class="divide-y divide-zinc-100">
+            <div class="divide-y divide-zinc-100 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
                 @forelse ($this->myTickets as $ticket)
                     <a href="{{ route('admin.tickets', ['search' => $ticket->demande]) }}" wire:navigate
                        wire:key="dash-ticket-{{ $ticket->id }}"
-                       class="flex items-center gap-3 px-6 py-3.5 transition hover:bg-secondary/[0.06]">
+                       class="flex items-center gap-3 px-5 py-2.5 transition hover:bg-secondary/[0.06]">
                         {{-- Pastille importance --}}
                         <span class="h-2.5 w-2.5 shrink-0 rounded-full"
                               style="background-color: {{ $ticket->importanceColor() }}"
@@ -70,13 +95,17 @@
                                 @endif
                             </p>
                         </div>
+                        <span class="hidden w-20 shrink-0 rounded-full px-2.5 py-1 text-center text-[11px] font-semibold sm:inline-block"
+                              style="background-color: {{ $ticket->importanceColor() }}1a; color: {{ $ticket->importanceColor() }}">
+                            {{ $ticket->importanceLabel() }}
+                        </span>
                         @if ($ticket->statut)
                             <span class="hidden shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:inline-block"
                                   style="background-color: {{ $ticket->statut->color() }}1a; color: {{ $ticket->statut->color() }}">
                                 {{ $ticket->statut->libelle }}
                             </span>
                         @endif
-                        <span class="hidden w-20 shrink-0 text-right text-xs text-zinc-400 md:block">
+                        <span class="hidden w-16 shrink-0 text-right text-xs text-zinc-400 md:block">
                             {{ $ticket->date?->locale('fr')->isoFormat('D MMM') }}
                         </span>
                     </a>
@@ -92,42 +121,64 @@
             </div>
         </div>
 
-        <livewire:admin.notepad />
-    </div>
-
-    <!-- Activité du mois + favoris -->
-    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {{-- Activité du mois --}}
-        <div class="rounded-2xl border border-zinc-200 bg-gradient-to-br from-zinc-900 to-zinc-800 p-6 text-white">
-            <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-                <x-lucide-calendar-days class="h-4 w-4" />
-                {{ now()->locale('fr')->isoFormat('MMMM YYYY') }}
-            </p>
-
-            <div class="mt-5 space-y-4">
-                <div class="flex items-baseline justify-between border-b border-white/10 pb-4">
-                    <div>
-                        <p class="text-3xl font-semibold tracking-tight">{{ $this->activiteMois['heures'] }}</p>
-                        <p class="text-xs uppercase tracking-wider text-zinc-400">Temps passé</p>
-                    </div>
-                    <x-lucide-clock class="h-7 w-7 text-primary" />
+        {{-- Colonne droite : crédits du mois + pense-bête --}}
+        <div class="flex min-h-0 flex-col gap-4">
+            <div class="shrink-0 rounded-2xl border border-zinc-200 bg-white px-5 py-4">
+                <div class="mb-3 flex items-center justify-between">
+                    <h2 class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                        <x-lucide-gauge class="h-3.5 w-3.5 text-secondary" />
+                        Crédits du mois
+                    </h2>
+                    <a href="{{ route('admin.recap.actions') }}" wire:navigate
+                       class="text-[11px] font-semibold text-primary hover:text-primary/70">Récap →</a>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <p class="text-2xl font-semibold tracking-tight">{{ $this->activiteMois['actions'] }}</p>
-                        <p class="text-xs uppercase tracking-wider text-zinc-400">Actions</p>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-semibold tracking-tight">{{ $this->activiteMois['tickets_termines'] }}</p>
-                        <p class="text-xs uppercase tracking-wider text-zinc-400">Tickets terminés</p>
-                    </div>
+
+                <div class="space-y-3">
+                    @forelse ($this->creditsContrats as $row)
+                        <div wire:key="credit-{{ $row['contrat']->id }}">
+                            <div class="flex items-baseline justify-between gap-3">
+                                <a href="{{ route('admin.contrats.show', $row['contrat']) }}" wire:navigate
+                                   class="truncate text-xs font-medium text-zinc-800 transition hover:text-primary">
+                                    {{ $row['contrat']->libelle }}
+                                </a>
+                                <span @class([
+                                    'shrink-0 text-[11px] tabular-nums',
+                                    'font-semibold text-red-600' => $row['pct'] !== null && $row['pct'] > 100,
+                                    'text-zinc-400' => $row['pct'] === null || $row['pct'] <= 100,
+                                ])>
+                                    {{ \App\Models\Action::formatHeures($row['temps']) }}@if($row['pct'] !== null) / {{ \App\Models\Action::formatHeures($row['credits']) }}@endif
+                                </span>
+                            </div>
+                            @if ($row['pct'] !== null)
+                                <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-100">
+                                    <div @class([
+                                        'h-full rounded-full transition-all duration-500',
+                                        'bg-red-500' => $row['pct'] > 100,
+                                        'bg-secondary' => $row['pct'] >= 80 && $row['pct'] <= 100,
+                                        'bg-primary' => $row['pct'] < 80,
+                                    ]) style="width: {{ min(100, $row['pct']) }}%"></div>
+                                </div>
+                            @endif
+                        </div>
+                    @empty
+                        <p class="text-xs text-zinc-400">Aucun temps saisi ce mois-ci.</p>
+                    @endforelse
                 </div>
             </div>
-        </div>
 
-        {{-- Favoris --}}
-        <div class="lg:col-span-2">
-            <livewire:admin.favorites />
+            <livewire:admin.notepad />
         </div>
     </div>
+
+    <!-- Toast de confirmation (fixe : ne décale pas la mise en page) -->
+    @if($flash)
+        <div x-data x-init="setTimeout(() => $wire.set('flash', null), 4000)"
+             class="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-lg">
+            <x-lucide-check-circle class="h-4 w-4 shrink-0" />
+            {{ $flash }}
+        </div>
+    @endif
+
+    <!-- Modal création express de ticket -->
+    <livewire:admin.quick-ticket />
 </div>
